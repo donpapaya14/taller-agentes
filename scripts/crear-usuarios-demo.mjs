@@ -1,6 +1,7 @@
 // Crea los tres usuarios de demostración (o les pone de nuevo la contraseña si ya existen) y deja
-// la demo como al principio. Los usuarios se pueden repetir las veces que haga falta; si la base
-// de datos se niega a restablecer la demo (por ejemplo, por la espera de 10 minutos), sale con 1.
+// la demo como al principio. Los usuarios se pueden repetir las veces que haga falta. Si la demo
+// ya se restableció hace menos de 10 minutos, lo dice y sale con 0: los usuarios quedan creados y
+// los datos siguen como estaban. Si restablecer_demo falla o responde algo desconocido, sale con 1.
 //
 // Uso: SUPABASE_URL=... SUPABASE_SECRET_KEY=... DEMO_PASSWORD=... node scripts/crear-usuarios-demo.mjs
 // Importa USUARIOS_DEMO del TypeScript de la app: pide Node 24 (.nvmrc), que ejecuta .ts sin
@@ -12,6 +13,12 @@ const VARIABLES = ['SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'DEMO_PASSWORD'];
 // Los dos códigos con los que Supabase Auth avisa de que el correo ya está registrado.
 const CODIGOS_DE_USUARIO_EXISTENTE = ['email_exists', 'user_already_exists'];
 const USUARIOS_POR_PAGINA = 200;
+// Lo único que responde restablecer_demo. Dentro de los 10 minutos de otro restablecimiento no toca
+// nada y contesta EN_ESPERA: no es un fallo.
+const MENSAJES_DE_RESTABLECER = new Map([
+  ['RESTABLECIDO', 'Demo restablecida.'],
+  ['EN_ESPERA', 'La demo ya se restableció hace menos de 10 minutos; los usuarios quedan creados.'],
+]);
 
 async function buscarIdDe(cliente, email) {
   let pagina = 1;
@@ -40,7 +47,11 @@ async function asegurarUsuario(cliente, email, password) {
   return `Contraseña puesta de nuevo: ${email}`;
 }
 
-async function main(entorno) {
+async function main(entornoCrudo) {
+  // Igual que leerEntornoSecreto: los espacios de los bordes se recortan y una contraseña solo con
+  // espacios cuenta como ausente. Si no, los usuarios se crearían con una contraseña distinta de la
+  // que la app manda al entrar, y nadie podría iniciar sesión.
+  const entorno = { ...entornoCrudo, DEMO_PASSWORD: entornoCrudo.DEMO_PASSWORD?.trim() };
   const faltan = VARIABLES.filter((nombre) => !entorno[nombre]);
   if (faltan.length > 0) {
     const avisos = faltan.map((nombre) => `Falta la variable de entorno ${nombre}`);
@@ -54,9 +65,13 @@ async function main(entorno) {
   for (const email of Object.values(USUARIOS_DEMO)) {
     process.stdout.write(`${await asegurarUsuario(cliente, email, entorno.DEMO_PASSWORD)}\n`);
   }
-  const { error } = await cliente.rpc('restablecer_demo');
+  const { data, error } = await cliente.rpc('restablecer_demo');
   if (error) throw error;
-  process.stdout.write('Demo restablecida.\n');
+  const mensaje = MENSAJES_DE_RESTABLECER.get(data);
+  if (!mensaje) {
+    throw new Error(`restablecer_demo devolvió un valor inesperado: ${JSON.stringify(data)}`);
+  }
+  process.stdout.write(`${mensaje}\n`);
   return 0;
 }
 

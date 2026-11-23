@@ -21,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.resetAllMocks();
 });
 
@@ -59,6 +60,19 @@ describe('crearClienteServidor', () => {
       ['sb-sesion', 'abc', { path: '/', httpOnly: true }],
       ['sb-otra', 'def', {}],
     ]);
+  });
+
+  it('[D-14] las llamadas del cliente se cortan al vencer el plazo que recibe', async () => {
+    const buscar = vi.fn().mockResolvedValue(new Response('ok'));
+    vi.stubGlobal('fetch', buscar);
+    const plazo = new AbortController();
+
+    await crearClienteServidor(plazo.signal);
+    await createServerClient.mock.calls[0][2].global.fetch('https://proyecto.example/x');
+    const { signal } = buscar.mock.calls[0][1];
+    plazo.abort();
+
+    expect(signal.aborted).toBe(true);
   });
 
   it('[D-2] sin la URL no crea nada y dice qué variable falta', async () => {
