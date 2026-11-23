@@ -1,0 +1,70 @@
+{
+  "feature": "f01-sistema-visual",
+  "ronda": 1,
+  "fecha": "2026-11-23",
+  "commitRevisado": "b264d4fa3652df75709525fb2b6999de9bd67a31",
+  "origen": "ronda",
+  "veredicto": "FALLA",
+  "comandos": [
+    {
+      "comando": "npm run check:full",
+      "resultado": "OK",
+      "resumen": "Sale con 0 en 4 s. eslint y tsc sin errores; vitest 5 archivos y 22 tests en verde; cobertura 87,23 % de líneas y 100 % de ramas (umbrales 80 y 75); depcruise sin violaciones (20 módulos, 24 dependencias); guarda de umbrales, detector de manipulación y trinquete sin hallazgos; jscpd 0 clones."
+    },
+    {
+      "comando": "git log --oneline main..paso-3 && git diff --stat main...paso-3",
+      "resultado": "OK",
+      "resumen": "Dos commits: 3c1b407 (feat, ronda 1) y b264d4f (merge de main en paso-3). 17 archivos, 1157 inserciones y 31 borrados, todos en src/app, src/ui y tests/diseno. main ya avanzó con f02, así que el diff se leyó desde el merge-base e05b373 (tres puntos)."
+    },
+    {
+      "comando": "grep -rnE sobre src y tests: eslint-disable, @ts-ignore, any, HTML inyectado (innerHTML y la propiedad de React que lo permite), skip y only, catch vacíos, NEXT_PUBLIC_ y process.env, unidades sueltas (px, rem, em, ms), clases con corchetes y style en línea",
+      "resultado": "OK",
+      "resumen": "Sin coincidencias de D-8, D-14 ni D-4; .env.example no declara ninguna NEXT_PUBLIC_. D-9: fuera de tokens.css solo quedan min-height: 100dvh, la geometría de los SVG (viewBox, r, strokeWidth) y un style en línea con --turno (el turno de entrada de la tarjeta); no hay clases con corchetes ni font-size, padding o color sueltos."
+    },
+    {
+      "comando": "node: cálculo propio del contraste WCAG 2.x con los hex de src/ui/tokens.css (script de Testing fuera del repo)",
+      "resultado": "OK",
+      "resumen": "Los 11 pares de PARES pasan: el más bajo es averia/chapa con 5,98 y el resto va de 6,83 a 17,04. Los pares que la interfaz usa y PARES no declara también: lampara/chapa-alta 5,77 y lampara/chapa 6,38 (icono y anillo de foco, piden 3) y placa/placa-banda 8,31."
+    },
+    {
+      "comando": "Playwright 1.65 y @axe-core/playwright 4.14 contra http://127.0.0.1:3333/muestra a 390x844 (las cuatro columnas del selector) y a 1440x900 (script de Testing fuera del repo)",
+      "resultado": "OK",
+      "resumen": "Con los datos de MUESTRA: scrollWidth igual a innerWidth (390 y 1440) en todos los casos, botones de acción de 56 px, letra mínima de 14 px, axe con 0 violaciones y 0 incompletas, las tres familias propias cargadas y ninguna petición externa. D-13 se cumple con esos datos."
+    },
+    {
+      "comando": "Playwright contra http://127.0.0.1:3333/muestra a 390x844: color y fondo efectivo de cada texto visible en las cuatro columnas, textos y atributos, movimiento reducido y teclado (script de Testing fuera del repo)",
+      "resultado": "OK",
+      "resumen": "Los 7 pares de color reales del DOM cumplen 4,5 (3 en texto grande); el más bajo es foso sobre lampara con 6,83. 73 textos visibles en español, 0 emojis y aria-label en español. Con prefers-reduced-motion: reduce la animación de las tarjetas pasa a none. Tab llega al selector con anillo de foco de 2 px y la flecha derecha cambia de columna."
+    },
+    {
+      "comando": "Playwright contra http://127.0.0.1:3333/muestra a 390x844: se sustituye en el DOM el texto de una tarjeta o de su matrícula por casos límite y se mide document.documentElement.scrollWidth (script de Testing fuera del repo)",
+      "resultado": "FALLO",
+      "resumen": "Desbordan (innerWidth 390): cliente de 80 letras seguidas 969, URL de 63 caracteres en la descripción 440, matrícula de 20 caracteres 460 y de 40 caracteres 841. Sin desborde: 500 caracteres con espacios, vehículo largo con guion, matrícula de 12 caracteres, matrícula vacía, todo vacío y 60 tarjetas en una columna. Es el origen de los dos fallos de D-13."
+    },
+    {
+      "comando": "12 mutaciones sobre una copia de la rama fuera del repo, cada una con npx vitest run tests/diseno (script de Testing)",
+      "resultado": "OK",
+      "resumen": "Los tests cazan text-[12px], color #fff, bg-red-500, --acero a #555555, un emoji, la tipografía Inter y el relleno lorem ipsum. No cazan style={{ fontSize: 12 }}, font: 12px/1, padding: 13px, px-[13px] ni un texto en inglés sin lorem ipsum. El código de la rama no tiene ninguno de esos casos (grep de arriba), así que van a observaciones y no a fallos."
+    },
+    {
+      "comando": "npm run spec:check",
+      "resultado": "FALLO",
+      "resumen": "Sale con 1: 4 VERIFICADO (D-9, D-10, D-11 y D-12), 0 ROJO, 10 SIN TEST (D-1 a D-8, D-14 y D-15) y 1 MANUAL (D-13). Ninguno de los SIN TEST es de las directrices que el plan asigna a f01 (D-9, D-10 y D-12), que salen VERIFICADO."
+    }
+  ],
+  "fallos": [
+    {
+      "directriz": "D-13",
+      "archivo": "src/ui/tablero/TarjetaOrden.tsx",
+      "descripcion": "El vehículo, la descripción y el cliente de la tarjeta (líneas 75 a 77) son párrafos sin ajuste de palabras largas: una palabra sin espacios que no cabe se sale de la tarjeta y ensancha la página, y a 390 px aparece desplazamiento horizontal. D-13 pide que a 390 px nada se desborde, y la descripción de una orden admite hasta 500 caracteres (docs/SPEC.md, línea 954).",
+      "evidencia": "Servidor de la rama en http://127.0.0.1:3333, viewport 390x844, ruta /muestra. Con document.querySelectorAll('article p')[2].textContent = 'A'.repeat(80) (cliente de la primera tarjeta), document.documentElement.scrollWidth vale 969 con window.innerWidth 390. Con la descripción (article p, índice 1) igual a 'https://taller.example.com/ordenes/recambios/pedido-0001234567890' (63 caracteres) vale 440. Desborda ya con 31 mayúsculas seguidas en la descripción o 41 minúsculas seguidas en el cliente. Con 500 caracteres separados por espacios vale 390, así que solo falla la palabra larga; con los datos de MUESTRA también vale 390."
+    },
+    {
+      "directriz": "D-13",
+      "archivo": "src/ui/Matricula.tsx",
+      "descripcion": "La placa lleva whitespace-nowrap y crece con el texto sin ningún tope de ancho (líneas 48 y 53): con 17 caracteres o más se sale de la pantalla de 390 px. /ordenes/nueva dibujará la placa mientras se escribe (docs/SPEC.md, línea 219), así que recibirá matrículas mal escritas de cualquier largo antes de que la validación las rechace.",
+      "evidencia": "Mismo servidor y viewport 390x844, ruta /muestra. Con document.querySelector('.matricula-caracteres').textContent = '1234 ABCDEFGHIJKLMNO' (20 caracteres), document.documentElement.scrollWidth vale 460 con window.innerWidth 390, y a.enlace-placa, span.matricula y span.matricula-caracteres terminan en right=460. Con 40 caracteres vale 841. Probando de 8 a 30 caracteres, el primer largo que desborda es 17; con 12 caracteres vale 390."
+    }
+  ],
+  "observaciones": "1) Alcance: main ya avanzó con f02, así que revisé el rango main..paso-3 (3c1b407 y el merge b264d4f) con el diff desde el merge-base e05b373; el git diff main..paso-3 literal mostraría ahora el trabajo de f02 como borrados. 2) No ejecuté npm run gate:e2e: tests/e2e/movil.spec.ts no existe todavía (lo crea f12, paso 15, y no incluye /muestra) y, sin URL_BASE, ese script lanza npm run build, que el encargo prohibía mientras el servidor sirve .next. D-13 se midió a mano con Playwright y axe contra /muestra. 3) Con los datos de MUESTRA se cumplen D-9, D-10, D-12 y D-13; los dos fallos salen solo con texto largo (una matrícula mal escrita y palabras sin espacios). 4) Lagunas de los tests de diseño, comprobadas con mutaciones en una copia fuera del repo: [D-9] vigila colores literales y la paleta de Tailwind, pero un padding: 13px o un px-[13px] pasan, y la directriz habla también de espaciados y tipografías; [D-12] caza text-[12px] pero no style={{ fontSize: 12 }} ni font: 12px/1; ningún test detecta texto en inglés (solo falla el test de componente que compara el texto exacto del estado vacío). El código actual no tiene ninguno de esos casos. 5) La matrícula enlazada mide 44 px de alto (198,7 de ancho) a 390 px. No es un botón de acción y el SPEC mide D-13 sobre button y a con clase de botón, así que no es fallo, pero es el objetivo táctil principal de cada tarjeta. 6) /muestra enlaza a /ordenes/<id>, que no existe hasta el paso 13: Next precarga esos enlaces y la consola da errores 404 (/ordenes/muestra-1?_rsc=...), y pulsar una matrícula lleva al 404 por defecto de Next, en inglés («404: This page could not be found.»). Cuando exista el armazón (paso 12) conviene un not-found en español. 7) AVANCE (qué botón sale en cada estado) y el orden de las columnas son reglas del taller escritas en src/ui: cuando exista src/nucleo/orden.ts (f03) conviene que la interfaz las lea de ahí. Tablero oculta sin avisar una orden con estado desconocido; es seguro solo si f07 valida cada fila con zod."
+}
