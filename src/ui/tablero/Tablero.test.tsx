@@ -118,3 +118,36 @@ describe('Tablero: entrega', () => {
     ).toEqual([expect.stringContaining('4821 KLM')]);
   });
 });
+
+// jsdom no calcula el layout: aquí se comprueban las clases que evitan el desborde. El ancho real
+// a 390 px lo mide un navegador (D-13).
+describe('Tablero: textos más largos que la tarjeta', () => {
+  const VEHICULO_LARGO = 'A'.repeat(80);
+  const DESCRIPCION_LARGA = 'https://taller.example.com/ordenes/recambios/pedido-0001234567890';
+  const CLIENTE_LARGO = 'b'.repeat(80);
+  const MATRICULA_LARGA = '1234 ABCDEFGHIJKLMNOPQRST';
+
+  it('[D-13] vehículo, descripción y cliente parten las palabras largas dentro de la tarjeta', () => {
+    const largos = orden({
+      vehiculo: VEHICULO_LARGO,
+      descripcion: DESCRIPCION_LARGA,
+      cliente: CLIENTE_LARGO,
+    });
+    render(<Tablero ordenes={[largos]} puedeEntregar={false} />);
+
+    const sinAjuste = [VEHICULO_LARGO, DESCRIPCION_LARGA, CLIENTE_LARGO]
+      .map((texto) => screen.getByText(texto))
+      .filter((parrafo) => !parrafo.closest('.wrap-anywhere'))
+      .map((parrafo) => parrafo.textContent);
+
+    expect(sinAjuste).toEqual([]);
+  });
+
+  it('[D-13] el enlace de una matrícula larga no pasa del ancho de la tarjeta', () => {
+    render(<Tablero ordenes={[orden({ matricula: MATRICULA_LARGA })]} puedeEntregar={false} />);
+
+    const enlace = screen.getByRole('link', { name: new RegExp(MATRICULA_LARGA) });
+
+    expect([...enlace.classList]).toContain('max-w-full');
+  });
+});

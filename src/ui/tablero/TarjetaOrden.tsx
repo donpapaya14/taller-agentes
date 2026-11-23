@@ -67,11 +67,16 @@ export function TarjetaOrden({ orden, puedeEntregar, accionAvanzar, turno }: Pro
       style={{ '--turno': turno } as CSSProperties}
     >
       <h3>
-        <Link href={fichaDe(orden.id)} className="enlace-placa inline-flex rounded-placa">
+        {/* El enlace no pasa del ancho de la tarjeta; la placa recorta lo que no cabe. */}
+        <Link
+          href={fichaDe(orden.id)}
+          className="enlace-placa inline-flex max-w-full rounded-placa"
+        >
           <Matricula texto={orden.matricula} />
         </Link>
       </h3>
-      <div className="flex flex-col gap-e1">
+      {/* Una palabra sin espacios (una URL, un correo) se parte en vez de ensanchar la tarjeta. */}
+      <div className="flex flex-col gap-e1 wrap-anywhere">
         <p className="font-seminegra text-hueso">{orden.vehiculo}</p>
         <p className="text-menor text-acero">{orden.descripcion}</p>
         <p className="text-menor text-acero">{orden.cliente}</p>

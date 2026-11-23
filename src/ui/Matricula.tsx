@@ -36,6 +36,8 @@ function BandaEuropea() {
   );
 }
 
+// Una matrícula mal escrita puede ser más larga que la pantalla: la placa no pasa del ancho de su
+// contenedor y recorta los caracteres con puntos suspensivos. El texto entero sigue en el DOM.
 export function Matricula({
   texto,
   tamano = 'normal',
@@ -45,12 +47,12 @@ export function Matricula({
 }) {
   return (
     <span
-      className={`matricula inline-flex overflow-hidden rounded-placa bg-placa text-placa-texto ${TAMANOS[tamano]}`}
+      className={`matricula inline-flex max-w-full overflow-hidden rounded-placa bg-placa text-placa-texto ${TAMANOS[tamano]}`}
     >
       <BandaEuropea />
       <span className="sr-only">Matrícula </span>
       <span
-        className={`matricula-caracteres font-dato font-media tracking-placa whitespace-nowrap ${CARACTERES[tamano]}`}
+        className={`matricula-caracteres font-dato font-media tracking-placa truncate ${CARACTERES[tamano]}`}
       >
         {texto}
       </span>
