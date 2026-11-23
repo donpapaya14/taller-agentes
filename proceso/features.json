@@ -1,0 +1,74 @@
+[
+  {
+    "id": "f01-sistema-visual",
+    "titulo": "Sistema visual y tablero",
+    "resumen": "Los tokens de color, tipografía y espaciado de FOSO y un tablero de muestra hecho con ellos.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f02-proceso",
+    "titulo": "Registro del proceso",
+    "resumen": "El formato de los informes de ronda, cómo se leen de la carpeta proceso y los tests que vigilan el proceso.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f03-nucleo",
+    "titulo": "Reglas del taller",
+    "resumen": "Las reglas de negocio del taller como funciones puras, con tests de propiedades en los cálculos.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f04-base-datos",
+    "titulo": "Base de datos y aislamiento",
+    "resumen": "El esquema de Postgres con RLS por taller en todas las tablas y un arnés para probar el aislamiento.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f05-funciones",
+    "titulo": "Entrega de órdenes y demo en la base de datos",
+    "resumen": "Funciones de Postgres para entregar una orden, asignarle número de factura y devolver la demo a su estado inicial.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f06-acceso",
+    "titulo": "Acceso y seguridad",
+    "resumen": "La lógica de acceso por rol, los clientes de Supabase del servidor y las cabeceras de seguridad.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f07-ordenes-recambios",
+    "titulo": "Órdenes y recambios",
+    "resumen": "Los casos de uso de órdenes y recambios y sus repositorios en Supabase, que validan cada fila con zod.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f08-documentos-demo",
+    "titulo": "PDF y demo restablecible",
+    "resumen": "El PDF de cada orden y la acción y el cron que restablecen la demo.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f09-pantallas-acceso",
+    "titulo": "Acceso, armazón y página de proceso",
+    "resumen": "El login con los accesos de demo como jefe y como mecánico, el armazón común y la página pública de proceso.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f10-pantallas-ordenes",
+    "titulo": "Tablero, nueva orden y ficha",
+    "resumen": "El tablero de cuatro columnas, el alta de una orden con la matrícula dibujada como placa y la ficha con PDF, WhatsApp y entrega.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f11-pantalla-recambios",
+    "titulo": "Almacén de recambios",
+    "resumen": "La lista de recambios con el stock como dato grande y los que están bajo mínimo arriba, en ámbar.",
+    "estado": "pendiente"
+  },
+  {
+    "id": "f12-movil",
+    "titulo": "Móvil y accesibilidad",
+    "resumen": "La app a 390 px, accesibilidad con axe, pruebas E2E con Playwright y el enlace para restablecer la demo.",
+    "estado": "pendiente"
+  }
+]
