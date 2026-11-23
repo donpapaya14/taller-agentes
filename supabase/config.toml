@@ -1,0 +1,10 @@
+# Configuración de la CLI de Supabase. El proyecto en la nube se crea en el paso 9.
+project_id = "taller-agentes"
+
+[api]
+# La API solo expone public: el esquema app (funciones de las políticas) queda fuera.
+schemas = ["public"]
+
+[auth]
+# Registro cerrado: no hay formulario de alta (SPEC, «Amenazas»).
+enable_signup = false
