@@ -33,7 +33,7 @@
     "id": "f06-acceso",
     "titulo": "Acceso y seguridad",
     "resumen": "La lógica de acceso por rol, los clientes de Supabase del servidor y las cabeceras de seguridad.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f07-ordenes-recambios",
