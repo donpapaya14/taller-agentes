@@ -342,6 +342,7 @@ Lo de la sección «Fuera de alcance». Ningún paso instala nada fuera del repo
 | 3 | Sistema visual FOSO y tablero de muestra → gate de diseño | 2 | 1, 2 | 4, 5, 6, 8 | develop + testing | opus — diseño fino dentro del paso (composición, ritmo, ajuste de contraste) |
 | 4 | Proceso: formato de ronda, lectura y tests de proceso | 2 | 1, 2 | 3, 5, 6, 8 | develop + testing | sonnet |
 | 5 | Núcleo puro del taller | 2 | 1, 2 | 3, 4, 6, 8 | develop + testing | sonnet |
+| 6b | Ronda siguiente de base de datos: referencias compuestas, permisos por columna, nulos | 2 (tras el 6, antes del 7) | 6 | 3, 4, 5, 8 | develop + testing | opus — mismo motivo que el paso 6: seguridad entre talleres sobre PGlite |
 | 6 | Base de datos: esquema, RLS y arnés de pruebas | 2 | 1, 2 | 3, 4, 5, 8 | develop + testing | opus — PGlite con roles y RLS tiene comportamiento sin comprobar y aquí se decide la seguridad entre talleres |
 | 7 | Funciones SQL: entregar orden, numeración y demo | 2 (tras el 6) | 6 | 3, 4, 5, 8 | develop + testing | sonnet |
 | 8 | Acceso: lógica, clientes de Supabase y cabeceras (sin pantallas) | 2 | 1, 2 | 3, 4, 5, 6 | develop + testing | sonnet |
@@ -716,6 +717,43 @@ Testing corre siempre en `sonnet`. Oleada 2: cinco ramas a la vez (3, 4, 5, 6→
 - **Verificación:** `npm run gate:rls` → verde con la salida pegada; `npm run check:full` → 0.
 - **Para y devuelve ABIERTO si:** PGlite no admite `create role`, `set local role`, `security definer` o disparadores `plpgsql` (decir cuál y el error exacto: el arquitecto decide si se pasa a `supabase start`); una política necesita otra función `security definer`.
 
+#### Paso 6b: Ronda siguiente de base de datos: referencias, precios y nulos (feature `f04-base-datos`)
+
+Cambio de contrato decidido por el arquitecto a partir de los ABIERTO de Develop. Se hace en la rama `paso-6`, editando las migraciones 01 y 02 en su sitio (aún no se han aplicado a ninguna base de datos). Commit `fix(f04-base-datos): <qué> [cambio de contrato]`; Testing lo revisa en la ronda siguiente. Si la ronda 1 de Testing trae fallos propios, se arreglan en el mismo encargo.
+
+- **Cierra:** C-2, C-3 (refuerzo); D-3
+- **Archivos:** `supabase/migrations/20261123000001_esquema.sql`, `supabase/migrations/20261123000002_rls.sql`, `tests/bd/arnes.ts` — modificar; `tests/bd/aislamiento.test.ts`, `tests/bd/roles.test.ts`, `tests/bd/catalogo.test.ts` — modificar (añadir casos).
+- **Contexto que necesitas:**
+  - Hoy las claves ajenas apuntan solo a `id`: el jefe de A inserta una línea de A con un recambio de B, una orden de A con un vehículo de B y un vehículo de A con un cliente de B.
+  - Hoy el mecánico puede escribir `precio_hora_centimos` y `entregada_en` en `ordenes` y elegir el `precio_unitario_centimos` de una línea.
+  - Faltan `not null` en varias columnas.
+  - Se ratifica lo que ya hiciste: el arnés reproduce los permisos por defecto de Supabase (todo concedido a `anon`, `authenticated` y `service_role`) antes de las migraciones; la migración hace `revoke all` a `authenticated` y concede solo lo que usan las políticas; `await` de nivel superior en los tests.
+- **Contrato exacto:**
+  - **Referencias dentro del taller** (esquema): `unique (taller_id, id)` en `clientes`, `vehiculos`, `recambios` y `ordenes`. Las claves ajenas pasan a ser compuestas y sustituyen a las simples: `vehiculos (taller_id, cliente_id) → clientes (taller_id, id)`; `ordenes (taller_id, vehiculo_id) → vehiculos (taller_id, id)`; `orden_lineas (taller_id, orden_id) → ordenes (taller_id, id) on delete cascade`; `orden_lineas (taller_id, recambio_id) → recambios (taller_id, id)`.
+  - **Nulos** (esquema): `not null` en `miembros.taller_id`, `miembros.rol`, `miembros.nombre`, `clientes.nombre`, `vehiculos.cliente_id`, `ordenes.vehiculo_id`, `orden_lineas.orden_id`, `orden_lineas.recambio_id`, `orden_lineas.cantidad`, `orden_lineas.precio_unitario_centimos`, `recambios.precio_centimos`, `recambios.stock` (`default 0`), `recambios.stock_minimo` (`default 0`). Además `check (precio_hora_centimos >= 0)` en `ordenes`.
+  - **Precio de la línea lo pone la base de datos** (esquema): disparador `orden_lineas_precio`, `before insert on orden_lineas for each row`: `new.precio_unitario_centimos := (select precio_centimos from public.recambios where id = new.recambio_id and taller_id = new.taller_id)`. Siempre, venga lo que venga en la fila.
+  - **Permisos por columna** (RLS), en lugar de permisos sobre la tabla entera para estas dos:
+    - `ordenes`: `grant select, delete`; `grant insert (taller_id, vehiculo_id, descripcion)`; `grant update (estado, descripcion, mano_obra_minutos)`. Nadie escribe por API `precio_hora_centimos`, `numero_factura`, `entregada_en`, `creada_en` ni `taller_id`.
+    - `orden_lineas`: `grant select, delete`; `grant insert (taller_id, orden_id, recambio_id, cantidad)`; `grant update (cantidad)`.
+    - Las políticas no cambian. Las condiciones `estado = 'recibido'` y `numero_factura is null` del `insert` de `ordenes` se mantienen aunque ya no se puedan enviar esas columnas.
+  - Arnés: `sembrarDosTalleres` inserta como superusuario (los permisos por columna no le afectan); el precio de sus líneas lo pone el disparador.
+- **Tests primero:**
+  | Test | Entrada | Resultado esperado |
+  |---|---|---|
+  | `[C-2] una línea de A no puede usar un recambio de B` | `como(jefeA)`: línea con `taller_id = tallerA`, `orden_id = ordenA`, `recambio_id = recambioB` | error de clave ajena |
+  | `[C-2] una orden de A no puede usar un vehículo de B` | `como(jefeA)`: orden con `taller_id = tallerA`, `vehiculo_id = vehiculoB` | error de clave ajena |
+  | `[C-2] un vehículo de A no puede colgar de un cliente de B` | `como(jefeA)`: vehículo con `cliente_id = clienteB` | error de clave ajena |
+  | `[C-2] tampoco como superusuario se cruzan talleres` | sin `como`: la misma línea con recambio de B | error de clave ajena (la regla es del esquema, no de la política) |
+  | `[C-3] nadie escribe el precio por hora ni la fecha de entrega por API` | `como(mecanicoA)` y `como(jefeA)`: `update ordenes set precio_hora_centimos = 0`; `update ordenes set entregada_en = now()` | error de permiso en las cuatro |
+  | `[C-3] al crear una orden no se pueden enviar estado, precio ni número` | `como(mecanicoA)`: `insert` con `precio_hora_centimos = 0`; otro con `numero_factura = 'F-1'` | error de permiso en las dos |
+  | `[C-3] el precio de la línea lo pone la base de datos` | `como(mecanicoA)`: `insert` de línea sin precio, recambio a 1250 | fila creada con `precio_unitario_centimos = 1250` |
+  | `[C-3] nadie elige el precio de una línea` | `como(mecanicoA)`: `insert` con `precio_unitario_centimos = 0`; `update … set precio_unitario_centimos = 0` | error de permiso en las dos |
+  | `[D-3] las columnas obligatorias no admiten nulos` | `information_schema.columns` de las 13 columnas del contrato | `is_nullable = 'NO'` en todas |
+  | `[D-3] un precio por hora negativo se rechaza` | como superusuario: `update ordenes set precio_hora_centimos = -500` | error de `check` |
+- **No hacer:** comprobar el taller de las referencias dentro de las políticas (lo hace el esquema, que también protege a las funciones `security definer`); `force row level security`; ocultar precios al mecánico en la base de datos (lo decide la interfaz).
+- **Verificación:** `npm run gate:rls` → verde con la salida pegada; `npm run check:full` → 0.
+- **Para y devuelve ABIERTO si:** PGlite no admite `grant` por columna o claves ajenas compuestas; el `on delete cascade` de `talleres` choca con las claves compuestas al borrar un taller (lo necesita `app.sembrar_demo()` del paso 7).
+
 #### Paso 7: Funciones SQL: entregar orden, numeración y demo (feature `f05-funciones`)
 
 Se hace en la misma rama y copia de trabajo que el paso 6, cuando su ronda pase.
@@ -728,7 +766,7 @@ Se hace en la misma rama y copia de trabajo que el paso 6, cuando su ronda pase.
   - `tests/bd/arnes.ts`: `crearBd`, `sembrarDosTalleres`, `como`, tipos `Bd`, `Sql`, `Semilla`.
   - `supabase/migrations/20261123000001_esquema.sql` (tablas, disparador `ordenes_reglas`) y `…02_rls.sql` (`app.mi_taller()`, `app.mi_rol()`).
 - **Contrato exacto:**
-  - `public.cerrar_orden(p_orden uuid) returns text` — `language plpgsql security definer set search_path = ''`. En este orden: `app.mi_rol()` no es `'jefe'` → `raise exception 'SOLO_JEFE'`; `select … from public.ordenes where id = p_orden and taller_id = app.mi_taller() for update`, sin fila → `'ORDEN_NO_ENCONTRADA'`; estado distinto de `'listo'` → `'ESTADO_INVALIDO'`; por cada línea `update public.recambios set stock = stock - cantidad where id = … and stock >= cantidad`, sin fila afectada → `raise exception 'STOCK_INSUFICIENTE:%', referencia`; número: `update public.talleres set siguiente_factura = siguiente_factura + 1 where id = <taller> returning siguiente_factura - 1` → `'F-' || to_char(now(), 'YYYY') || '-' || lpad(n::text, 4, '0')`; `update public.ordenes set estado = 'entregado', numero_factura = …, entregada_en = now()`; devuelve el número. `revoke all on function … from public, anon; grant execute … to authenticated`.
+  - `public.cerrar_orden(p_orden uuid) returns text` — `language plpgsql security definer set search_path = ''`. En este orden: `app.mi_rol()` no es `'jefe'` → `raise exception 'SOLO_JEFE'`; `select … from public.ordenes where id = p_orden and taller_id = app.mi_taller() for update`, sin fila → `'ORDEN_NO_ENCONTRADA'`; estado distinto de `'listo'` → `'ESTADO_INVALIDO'`; por cada línea `update public.recambios set stock = stock - cantidad where id = … and taller_id = <taller de la orden> and stock >= cantidad` (el filtro por taller es obligatorio aunque las claves compuestas ya lo impidan), sin fila afectada → `raise exception 'STOCK_INSUFICIENTE:%', referencia`; número: `update public.talleres set siguiente_factura = siguiente_factura + 1 where id = <taller> returning siguiente_factura - 1` → `'F-' || to_char(now(), 'YYYY') || '-' || lpad(n::text, 4, '0')`; `update public.ordenes set estado = 'entregado', numero_factura = …, entregada_en = now()`; devuelve el número. `revoke all on function … from public, anon; grant execute … to authenticated`.
   - `app.sembrar_demo() returns void` — borra las filas de los dos talleres de demostración (ids fijos `00000000-0000-4000-8000-00000000000a` y `00000000-0000-4000-8000-00000000000b`) y las crea de nuevo:
     - «Talleres Vega» (`…000a`): 6 clientes, 8 vehículos, 10 recambios (exactamente 2 con stock ≤ mínimo), 9 órdenes: 3 `recibido`, 3 `en_reparacion`, 2 `listo`, 1 `entregado` (con `numero_factura = 'F-2026-0001'`; `siguiente_factura = 2`); de 1 a 3 líneas en las que están en reparación, listas o entregadas. Las filas se insertan con su estado final directamente (un `insert` no dispara `ordenes_reglas`).
     - «Mecánica Ribera» (`…000b`): 2 clientes, 2 vehículos, 3 recambios, 2 órdenes `recibido`.
@@ -848,7 +886,7 @@ Cambio de contrato decidido por el arquitecto, no hallazgo de Testing: Develop l
 #### Paso 9: Proyecto de Supabase en la nube
 
 - **Cierra:** P-10 (parte: plan Free), amenaza «Alta de usuarios»
-- **Archivos:** `.env.local` — crear en local, **nunca** al repo. Ningún archivo versionado.
+- **Archivos:** `.env.local` — crear en local, **nunca** al repo; `scripts/comprobar-nube.mjs` — crear (versionado, sin claves).
 - **Contexto que necesitas:**
   - El CLI de Supabase tiene sesión en la organización personal `donpapaya14's Org`, id `<id-organizacion>`. Tiene un proyecto en pausa (`<proyecto-en-pausa>`) que no se toca. **Nunca** otra organización.
   - En `main` ya están integradas las cuatro migraciones (`supabase/migrations/2026112300000{1,2,3,4}_*.sql`), `supabase/config.toml` con `enable_signup = false` y `scripts/crear-usuarios-demo.mjs`.
@@ -861,7 +899,8 @@ Cambio de contrato decidido por el arquitecto, no hallazgo de Testing: Develop l
   5. `node --env-file=.env.local scripts/crear-usuarios-demo.mjs`.
 - **Tests primero:** no aplica (infraestructura). La prueba es la verificación.
 - **No hacer:** tocar el proyecto en pausa; activar complementos, ramas o cambiar el tamaño de cómputo; escribir claves en archivos versionados o en el informe (se citan por nombre, no por valor).
-- **Verificación:** `supabase migration list` → las 4 aplicadas en remoto; con el cliente secreto, `select count(*) from ordenes` → 11 (9 + 2); una petición de alta (`auth.signUp`) con la clave publicable → rechazada por registro desactivado; `git status --short` → no aparece `.env.local`; `supabase projects list` → dos proyectos en la organización personal, el nuevo `ACTIVE_HEALTHY`.
+- **Comprobación de permisos en la nube** (en Supabase el dueño de las tablas es `postgres`, que no es superusuario, y los permisos por defecto no son los de PGlite): `scripts/comprobar-nube.mjs` lee `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y `DEMO_PASSWORD` del entorno y, **solo con la clave publicable**, comprueba e imprime `OK`/`FALLO` por línea (sale con 1 si hay algún `FALLO`): (1) sin sesión, `select` en `ordenes` → 0 filas o error de permiso; (2) sin sesión, `rpc('cerrar_orden')` y `rpc('restablecer_demo')` → error de permiso; (3) el jefe de demostración entra y ve 9 órdenes y 10 recambios (prueba que `app.mi_taller()` lee `miembros` siendo `security definer`); (4) ese jefe no ve ninguna fila con el `taller_id` del otro taller y `rpc('restablecer_demo')` le da error de permiso; (5) el mecánico: `update recambios set stock = 0` → 0 filas, y `rpc('cerrar_orden')` sobre una orden en «Listo» → `SOLO_JEFE`; (6) el jefe del otro taller ve 2 órdenes. Ninguna comprobación deja datos cambiados.
+- **Verificación:** `node --env-file=.env.local scripts/comprobar-nube.mjs` → todo `OK`, con la salida pegada; `supabase migration list` → las 4 aplicadas en remoto; con el cliente secreto, `select count(*) from ordenes` → 11 (9 + 2); una petición de alta (`auth.signUp`) con la clave publicable → rechazada por registro desactivado; `git status --short` → no aparece `.env.local`; `supabase projects list` → dos proyectos en la organización personal, el nuevo `ACTIVE_HEALTHY`.
 - **Para y devuelve ABIERTO si:** el plan no es Free; `projects create` pide confirmar un pago o dice que no caben más proyectos; `config push` no desactiva el registro (lo hace Vladys en Authentication → Sign In / Providers); las claves tienen un formato que `@supabase/ssr` rechaza.
 
 #### Paso 10: Órdenes y recambios: casos de uso y repositorios (feature `f07-ordenes-recambios`)
@@ -889,7 +928,7 @@ Cambio de contrato decidido por el arquitecto, no hallazgo de Testing: Develop l
   export async function crearOrden(d: DatosOrden, tallerId: string): Promise<{ id: string }>;   // crea cliente y vehículo si vienen nuevos
   export async function cambiarEstado(id: string, de: Estado, a: Estado): Promise<boolean>;     // update … where id and estado = de; false si no afectó fila
   export async function guardarManoObra(id: string, minutos: number): Promise<boolean>;
-  export async function anadirLinea(d: { ordenId: string; recambioId: string; cantidad: number; tallerId: string }): Promise<boolean>;  // copia el precio del recambio
+  export async function anadirLinea(d: { ordenId: string; recambioId: string; cantidad: number; tallerId: string }): Promise<boolean>;  // no envía precio: lo pone el disparador `orden_lineas_precio`
   export async function quitarLinea(lineaId: string): Promise<boolean>;
   export async function rpcCerrar(id: string): Promise<{ numero: string } | { error: string }>;  // error = mensaje de la excepción de Postgres
   // src/adaptadores/supabase/recambios.ts
@@ -1196,6 +1235,7 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 | 4 | C-12 (datos), P-2, P-3, P-4, D-15 |
 | 5 | C-3, C-4, C-5, C-6, C-7, C-8, C-9, C-11 (reglas), D-1, D-5, D-6 |
 | 6 | C-2, C-3, C-4 (base de datos), D-3 |
+| 6b | C-2, C-3, D-3 (refuerzo) |
 | 7 | C-5, C-8 (numeración), C-13 (función) |
 | 8 | C-1, C-18, D-2, D-4, D-7, D-8, D-14 |
 | 8b | C-1, C-18, D-14 (refuerzo) |
@@ -1232,6 +1272,12 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 (oleada 2) P-4 se alinea con el contrato del paso 4, `testing.md` y D-15: una ronda `FALLA` vale con un fallo con evidencia o con un comando en rojo (el comando en rojo ya es la evidencia).
 - 2026-11-23 (oleada 2) `formatearEuros` lanza `RangeError('Importe no válido')` si no recibe un entero finito, igual que `calcularTotales`. Si la ronda 1 de Testing no lo señala, entra como cambio de contrato de `f03-nucleo` y Testing lo revisa en la ronda siguiente; no se anota como hallazgo de Testing.
 - 2026-11-23 (oleada 2) La línea base del trinquete se baja en `main` tras integrar cada oleada con `check:full` en verde (`node scripts/puertas/trinquete.mjs --actualizar`, commit `chore(calidad): baja la línea base del trinquete`). Solo baja; nunca dentro de una rama de feature.
+- 2026-11-23 (paso 6) Las referencias entre tablas llevan el taller: claves ajenas compuestas `(taller_id, x_id)`. Es una regla del esquema, así que también protege a `cerrar_orden()` y a cualquier función `security definer` (descartado: comprobarlo en cada política, que no cubre a las funciones). `cerrar_orden()` filtra además por taller al descontar. Paso 6b y paso 7.
+- 2026-11-23 (paso 6) Nadie escribe por API el precio por hora, el número de factura, la fecha de entrega ni el precio de una línea: permisos por columna en `ordenes` y `orden_lineas`, y el precio de la línea lo copia un disparador desde el recambio. El precio por hora queda en su valor por defecto (no hay pantalla que lo cambie). Paso 6b; el paso 10 no envía precio al añadir una línea.
+- 2026-11-23 (paso 6) El mecánico puede leer precios por API aunque la interfaz no se los enseñe: dentro de un mismo taller no es un secreto y ocultarlo por columnas complicaría las consultas. La amenaza cubierta es que los cambie.
+- 2026-11-23 (paso 6) `not null` en todas las columnas que el modelo da por obligatorias, `default 0` en stock y stock mínimo, y `check` de precio por hora no negativo. Paso 6b.
+- 2026-11-23 (paso 6) Ratificado: el arnés de PGlite reproduce los permisos por defecto de Supabase antes de migrar; la migración retira todo a `authenticated` y concede solo lo que usan las políticas; `await` de nivel superior en los tests de base de datos.
+- 2026-11-23 (paso 6) El paso 9 comprueba los permisos contra la nube con `scripts/comprobar-nube.mjs` (solo clave publicable y usuarios de demostración): PGlite no reproduce que `postgres` no sea superusuario en Supabase.
 - 2026-11-23 App nueva desde cero, sin código de otros proyectos.
 - 2026-11-23 Todo el acceso a datos en el servidor, sin cliente de Supabase en el navegador (ninguna clave en el cliente; descartado: consultas desde componentes de cliente).
 - 2026-11-23 El aislamiento y los roles se deciden en Postgres (RLS + `cerrar_orden`), no en el servidor de Next (descartado: filtrar por `taller_id` con la clave secreta).
@@ -1246,6 +1292,8 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 OK de Vladys a SPEC + plan («ok», tras ver el resumen y las 3 preguntas con recomendación «sí»): commits con usuario `donpapaya14` y nombre real; repo privado durante la construcción y público al final; GATE 3 en dos tiempos.
 - 2026-11-23 Los tipos de agente `develop` y `testing` no estaban cargados en la sesión que construye (se abrió fuera del repo): se lanzan como `ejecutor-sonnet` con la primera línea «Lee `.claude/agents/develop.md` (o `testing.md`) y trabaja exactamente como dice», como prevé «Cómo encaja con el flujo de la casa».
 - 2026-11-23 Pendientes del paso 1 para pasos posteriores: (a) quien cambie `src/app/page.tsx` sustituye el test provisional de `tests/proceso/enunciado.test.ts`; (b) `AGENTS.md` que reescribe `next dev` va a `.gitignore` (paso 16); (c) el job `desplegar` de `gate.yml` necesita `npx playwright install --with-deps chromium` antes del smoke (paso 16); (d) `trinquete --actualizar` siempre después de `git add`; (e) valorar eslint 10 y `vitest.config.mts` en el paso 16.
+- 2026-11-23 (ronda 1 de f03-nucleo, observaciones de Testing) Cambio de contrato del núcleo junto al de `formatearEuros`: `descontar` rechaza cantidades que no sean enteros ≥ 1; `calcularTotales` lanza si un producto intermedio o el total deja de ser entero seguro; `puede` solo concede permisos a `jefe` y `mecanico`. La prueba de D-1 solo vigila imports; reloj, entorno y azar sin import (`Date.now`, `process.env`, `Math.random`, `fetch`) los cubre una regla de lint en el paso 16.
+- 2026-11-23 Gate de diseño: OK de Vladys («ok») al tablero de muestra FOSO (capturas 1440×900 y 390×844 del commit 3c1b407). Pendiente menor visto en la captura móvil: el grano del fondo no cubre toda la altura de página; se corrige en el paso 12 (armazón) o en la siguiente ronda de f01.
 - 2026-11-23 Concepto visual FOSO, sin librería de componentes y con la paleta por defecto de Tailwind apagada (descartado: shadcn/ui).
 
 ## Umbrales
