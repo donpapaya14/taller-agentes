@@ -1,0 +1,214 @@
+# Gate de calidad: cada puerta deja su informe y scripts/puertas/informe-gate.mjs decide.
+#
+#   gate rápido    cada push a la rama principal y cada pull request
+#   gate completo  a mano (Actions → Gate → Run workflow). Es el único camino a producción.
+#
+# El veredicto no lo da ningún paso suelto: cada puerta deja su informe en reports/gate y
+# scripts/puertas/informe-gate.mjs decide. Una puerta requerida que no deja informe cuenta como
+# FALLO, salvo que calidad.json la tenga en `omitir` con su motivo.
+#
+# Seguridad del propio workflow: solo push, pull_request y workflow_dispatch (nunca schedule),
+# permisos de solo lectura y ningún dato del evento interpolado dentro de un `run:`.
+name: Gate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      desplegar:
+        description: Desplegar a producción si el gate completo sale en verde
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+env:
+  NIVEL: ${{ github.event_name == 'workflow_dispatch' && 'completo' || 'rapido' }}
+  DIR: reports/gate
+  PUERTAS: scripts/puertas
+  REF_BASE_PR: ${{ github.base_ref }}
+  SHA_ANTERIOR: ${{ github.event.before }}
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Versión fija y no la de .nvmrc: las puertas usan fs.globSync, que no existe en Node 20.
+      # Es la misma línea mayor con la que check:full corre en la Mac.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Con qué se compara: la rama destino en un PR, el commit anterior en un push y, si no lo
+      # hay (rama nueva, lanzamiento a mano), el primer commit del repo.
+      - name: Calcular la base
+        run: |
+          base=""
+          if [ -n "$REF_BASE_PR" ]; then
+            base="origin/$REF_BASE_PR"
+          elif [ -n "$SHA_ANTERIOR" ] && git cat-file -e "$SHA_ANTERIOR^{commit}" 2> /dev/null; then
+            base="$SHA_ANTERIOR"
+          else
+            base=$(git rev-list --max-parents=0 HEAD | tail -n 1)
+          fi
+          echo "BASE=$base" >> "$GITHUB_ENV"
+          mkdir -p "$DIR" reports
+
+      # --- Puertas del proyecto: scripts de package.json con nombre fijo (ADOPTAR.md) ---------
+      - name: lint
+        run: node "$PUERTAS/run-check.mjs" lint --out "$DIR" -- npm run lint
+
+      - name: tests y cobertura
+        run: node "$PUERTAS/run-check.mjs" tests --out "$DIR" -- npm run cobertura
+
+      - name: spec
+        run: node "$PUERTAS/run-check.mjs" spec --out "$DIR" -- npm run spec:check
+
+      - name: arquitectura
+        run: node "$PUERTAS/run-check.mjs" arquitectura --out "$DIR" -- npm run arquitectura
+
+      - name: duplicado
+        run: node "$PUERTAS/run-check.mjs" duplicado --out "$DIR" -- npm run duplicado
+
+      - name: muerto
+        run: node "$PUERTAS/run-check.mjs" muerto --out "$DIR" -- npm run muerto
+
+      # --- Puertas de la casa: comparan la base con HEAD --------------------------------------
+      # `|| true`: estos scripts salen con 1 cuando hay FALLO, pero el veredicto es del informe.
+      - name: umbrales
+        run: node "$PUERTAS/guarda-umbrales.mjs" --base "$BASE" --json "$DIR/umbrales.json" || true
+
+      - name: manipulacion
+        run: node "$PUERTAS/detector-manipulacion.mjs" --base "$BASE" --json "$DIR/manipulacion.json" || true
+
+      - name: trinquete
+        run: node "$PUERTAS/trinquete.mjs" --base "$BASE" --json "$DIR/trinquete.json" || true
+
+      # --- Seguridad: herramientas externas, sin cuenta ni clave ------------------------------
+      # Se descargan aparte y en silencio: el informe guarda las últimas 80 líneas de cada puerta
+      # y el progreso de `docker pull` tapaba los hallazgos.
+      - name: Descargar imágenes de seguridad
+        run: |
+          docker pull -q ghcr.io/gitleaks/gitleaks:latest
+          docker pull -q semgrep/semgrep
+          docker pull -q ghcr.io/google/osv-scanner:latest
+
+      - name: secretos (gitleaks)
+        run: >
+          node "$PUERTAS/run-check.mjs" secretos --out "$DIR" --
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest
+          detect --source /repo --no-banner --redact
+
+      - name: sast (semgrep)
+        run: >
+          node "$PUERTAS/run-check.mjs" sast --out "$DIR" --
+          docker run --rm -v "$PWD:/src" semgrep/semgrep
+          semgrep scan --config p/default --error --quiet --metrics=off /src
+
+      - name: dependencias (osv-scanner)
+        run: >
+          node "$PUERTAS/run-check.mjs" dependencias --out "$DIR" --
+          docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:latest
+          scan source --lockfile /src/package-lock.json
+
+      # --- Gate completo: Supabase local, usuarios de demostración y navegador ----------------
+      # Los necesitan gate:e2e y gate:a11y (gate:rls usa PGlite). Las claves salen del
+      # `supabase status` del propio runner: son las de esa base local, no un secreto del repo.
+      # ANON_KEY y SERVICE_ROLE_KEY sirven de respaldo si la CLI no entrega las claves nuevas.
+      - uses: supabase/setup-cli@v1
+        if: env.NIVEL == 'completo'
+
+      - name: Supabase local, usuarios de demostración y navegador
+        if: env.NIVEL == 'completo'
+        run: |
+          supabase start
+          supabase db reset
+          eval "$(supabase status -o env)"
+          export SUPABASE_URL="$API_URL"
+          export SUPABASE_PUBLISHABLE_KEY="${PUBLISHABLE_KEY:-$ANON_KEY}"
+          export SUPABASE_SECRET_KEY="${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+          export DEMO_PASSWORD=demo-ci-local
+          export CRON_SECRET=cron-ci-local
+          for nombre in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY \
+            DEMO_PASSWORD CRON_SECRET; do
+            echo "$nombre=${!nombre}" >> "$GITHUB_ENV"
+          done
+          node scripts/crear-usuarios-demo.mjs
+          npx playwright install --with-deps chromium
+
+      # --- Puertas opcionales: corren si el repo define el script `gate:<id>` ------------------
+      # tipos y rls en los dos niveles; el resto solo en el gate completo. Cuáles son requeridas
+      # lo decide informe-gate según `tipo`, `supabase` y tsconfig.json.
+      - name: puertas gate:<id>
+        run: |
+          ids="tipos rls"
+          if [ "$NIVEL" = completo ]; then
+            ids="$ids mutacion e2e dast cabeceras lighthouse a11y enlaces carga n8n"
+          fi
+          for id in $ids; do
+            if node -e 'process.exit(require("./package.json").scripts?.[process.argv[1]] ? 0 : 1)' "gate:$id"; then
+              node "$PUERTAS/run-check.mjs" "$id" --out "$DIR" -- npm run "gate:$id"
+            fi
+          done
+
+      # --- Veredicto -------------------------------------------------------------------------
+      - name: Informe del gate
+        run: >
+          node "$PUERTAS/informe-gate.mjs" --nivel "$NIVEL" --dir "$DIR"
+          --calidad calidad.json --sha "$GITHUB_SHA"
+          --salida gate-report.json --resumen "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-${{ github.sha }}
+          path: |
+            gate-report.json
+            reports/gate
+          if-no-files-found: warn
+          retention-days: 30
+
+  # Producción solo sale de aquí: gate completo en verde, lanzado a mano, desde la rama principal.
+  # El entorno `produccion` guarda los secretos de despliegue; si el plan de GitHub lo permite,
+  # ponle a Vladys como revisor obligatorio y el GATE 3 queda dentro de GitHub.
+  desplegar:
+    needs: gate
+    if: >
+      github.event_name == 'workflow_dispatch' && inputs.desplegar &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: produccion
+    # Secretos de despliegue del entorno `produccion`; URL_BASE apunta el smoke al sitio publicado.
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      URL_BASE: ${{ vars.URL_PRODUCCION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Desplegar
+        run: npm run desplegar
+      - name: Smoke de producción
+        run: npm run smoke

@@ -1,0 +1,8 @@
+{
+  "duplicacionPct": 0,
+  "knipIssues": 10,
+  "suppressions": 0,
+  "archivosGrandes": {
+    "scripts/puertas/spec-check.mjs": 398
+  }
+}

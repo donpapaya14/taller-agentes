@@ -1,0 +1,29 @@
+# Dependabot. Plantilla de <plantilla-de-puertas> (ver ADOPTAR.md).
+#
+# Un PR semanal agrupado con las actualizaciones menores y de parche, y PR aparte para cada
+# salto mayor. Los avisos de seguridad no esperan al lunes: GitHub abre su PR en cuanto salen
+# (hay que activar "Dependabot security updates" en Settings → Advanced Security).
+# Cada PR pasa por el gate rápido como cualquier otro; ninguno se fusiona solo.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 3
+    groups:
+      menores-y-parches:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: ci

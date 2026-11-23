@@ -1,0 +1,22 @@
+{
+  "tipo": "web",
+  "supabase": true,
+  "limites": {
+    "maxLineasArchivo": 300,
+    "maxLineasFuncion": 50,
+    "maxComplejidad": 10,
+    "maxCognitiva": 15,
+    "maxProfundidad": 3,
+    "maxParametros": 4
+  },
+  "mutacion": {
+    "break": 80,
+    "rutas": ["src/nucleo/**/*.ts"]
+  },
+  "omitir": {
+    "dast": "App de demostración sin datos reales ni formularios públicos más allá del acceso; el riesgo real es el aislamiento entre talleres y lo cubren C-2, C-3 y las cabeceras de C-18",
+    "lighthouse": "Sin imágenes ni terceros; el presupuesto de peso no aporta en una app tras login",
+    "enlaces": "Los únicos enlaces externos son wa.me y el repo; el smoke los cubre",
+    "carga": "Uso esperado de un evaluador a la vez; el límite es el plan gratuito, descrito en Escalado"
+  }
+}
