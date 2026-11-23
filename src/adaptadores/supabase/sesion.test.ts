@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { leerSesion, refrescarSesion } from './sesion';
+import { PLAZO_TOTAL_MS, PlazoVencido } from './tiempo-limite';
 
 const { crearClienteServidor, createServerClient } = vi.hoisted(() => ({
   crearClienteServidor: vi.fn(),
@@ -64,14 +65,32 @@ const clienteConAuthCaido = {
   },
 };
 
-function conUsuarioYRespuesta(respuesta: { data: unknown; error: { message: string } | null }) {
-  const eq = vi.fn(() => ({ maybeSingle: async () => respuesta }));
-  const from = vi.fn(() => ({ select: () => ({ eq }) }));
+type RespuestaDeLaConsulta = { data: unknown; error: { message: string } | null };
+
+// Una consulta de supabase-js: cada método devuelve la misma consulta y, al pedir la fila, da la
+// respuesta.
+function consultaQueDa(respuesta: RespuestaDeLaConsulta) {
+  const consulta = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    retry: vi.fn(),
+    maybeSingle: async () => respuesta,
+  };
+  consulta.select.mockReturnValue(consulta);
+  consulta.eq.mockReturnValue(consulta);
+  consulta.retry.mockReturnValue(consulta);
+  return consulta;
+}
+
+function conUsuarioYRespuesta(respuesta: RespuestaDeLaConsulta) {
+  const consulta = consultaQueDa(respuesta);
+  const from = vi.fn(() => consulta);
   const getUser = async () => ({ data: { user: { id: ID_USUARIO } }, error: null });
-  return { from, eq, auth: { getUser } };
+  return { from, eq: consulta.eq, retry: consulta.retry, auth: { getUser } };
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.resetAllMocks();
@@ -123,6 +142,35 @@ describe('leerSesion', () => {
   });
 });
 
+describe('leerSesion con Supabase caído', () => {
+  it('[D-14] el error de la consulta viaja como causa del mensaje', async () => {
+    const error = { message: 'connection refused' };
+    crearClienteServidor.mockResolvedValue(conUsuarioYRespuesta({ data: null, error }));
+
+    await expect(leerSesion()).rejects.toMatchObject({
+      message: 'No se pudo cargar tu taller. Inténtalo de nuevo en unos minutos.',
+      cause: error,
+    });
+  });
+
+  it('[D-14] la consulta de miembros no reintenta: con Supabase caído esperaría más que el plazo', async () => {
+    const cliente = conUsuarioYRespuesta({ data: FILA, error: null });
+    crearClienteServidor.mockResolvedValue(cliente);
+
+    await leerSesion();
+
+    expect(cliente.retry).toHaveBeenCalledWith(false);
+  });
+
+  it('[D-14] crea el cliente con la señal del plazo de la operación', async () => {
+    crearClienteServidor.mockResolvedValue(sinUsuario);
+
+    await leerSesion();
+
+    expect(crearClienteServidor).toHaveBeenCalledWith(expect.any(AbortSignal));
+  });
+});
+
 describe('leerSesion sin respuesta de Auth', () => {
   it.each(FALLOS_DE_RED_O_TIEMPO)('[D-14] si Auth falla por %s no hay sesión', async (_, error) => {
     crearClienteServidor.mockResolvedValue(clienteQueLanza(error));
@@ -140,6 +188,21 @@ describe('leerSesion sin respuesta de Auth', () => {
     crearClienteServidor.mockResolvedValue(clienteConAuthCaido);
 
     expect(await leerSesion()).toBeNull();
+  });
+
+  it('[D-14] si la operación entera pasa del plazo avisa con el mensaje de siempre y guarda el motivo', async () => {
+    vi.useFakeTimers();
+    crearClienteServidor.mockResolvedValue({
+      auth: { getUser: () => new Promise(() => undefined) },
+    });
+
+    const lectura = expect(leerSesion()).rejects.toMatchObject({
+      message: 'No se pudo cargar tu taller. Inténtalo de nuevo en unos minutos.',
+      cause: expect.any(PlazoVencido),
+    });
+    await vi.advanceTimersByTimeAsync(PLAZO_TOTAL_MS);
+
+    await lectura;
   });
 });
 
@@ -239,5 +302,54 @@ describe('refrescarSesion sin respuesta de Auth', () => {
     createServerClient.mockReturnValue(clienteConAuthCaido);
 
     expect((await refrescarSesion(peticion())).haySesion).toBe(false);
+  });
+});
+
+describe('refrescarSesion pasado el plazo', () => {
+  beforeEach(() => {
+    vi.stubEnv('SUPABASE_URL', 'https://proyecto.example');
+    vi.stubEnv('SUPABASE_PUBLISHABLE_KEY', 'clave-publicable');
+  });
+
+  it('[D-14] si Auth no acaba en el plazo cuenta como sin sesión pero conserva lo ya renovado', async () => {
+    vi.useFakeTimers();
+    const renovada = { name: 'sb-sesion', value: 'nueva', options: { path: '/' } };
+    createServerClient.mockImplementation((_url, _clave, opciones) => ({
+      auth: {
+        getUser: () => {
+          opciones.cookies.setAll([renovada], { 'Cache-Control': 'private, no-store' });
+          return new Promise(() => undefined);
+        },
+      },
+    }));
+
+    const refresco = refrescarSesion(peticion());
+    await vi.advanceTimersByTimeAsync(PLAZO_TOTAL_MS);
+
+    expect(await refresco).toEqual({
+      haySesion: false,
+      cookies: [renovada],
+      cabeceras: { 'Cache-Control': 'private, no-store' },
+    });
+  });
+
+  it('[D-14] al vencer el plazo corta las llamadas que el cliente tenía en marcha', async () => {
+    vi.useFakeTimers();
+    const buscar = vi.fn().mockResolvedValue(new Response('ok'));
+    vi.stubGlobal('fetch', buscar);
+    createServerClient.mockImplementation((_url, _clave, opciones) => ({
+      auth: {
+        getUser: async () => {
+          await opciones.global.fetch('https://proyecto.example/auth/v1/user');
+          return new Promise(() => undefined);
+        },
+      },
+    }));
+
+    const refresco = refrescarSesion(peticion());
+    await vi.advanceTimersByTimeAsync(PLAZO_TOTAL_MS);
+    await refresco;
+
+    expect(buscar.mock.calls[0][1].signal.aborted).toBe(true);
   });
 });

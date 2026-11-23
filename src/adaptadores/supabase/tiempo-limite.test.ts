@@ -1,17 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { conTiempoLimite, esFalloDeRedOTiempo, LIMITE_MS } from './tiempo-limite';
+import {
+  conPlazoTotal,
+  conTiempoLimite,
+  esFalloDeRedOTiempo,
+  LIMITE_MS,
+  PLAZO_TOTAL_MS,
+  PlazoVencido,
+} from './tiempo-limite';
 
 const URL_DE_PRUEBA = 'https://proyecto.example/auth/v1/user';
 
-// Como el fetch de verdad: no contesta nunca, salvo que lo aborte su señal.
+// Como el fetch de verdad: no contesta nunca, salvo que lo aborte su señal (también si ya venía abortada).
 const fetchQueNuncaResuelve: typeof fetch = (_entrada, opciones) =>
   new Promise((_resolver, rechazar) => {
-    opciones?.signal?.addEventListener('abort', () => rechazar(opciones.signal?.reason));
+    const corte = opciones?.signal;
+    if (corte?.aborted) rechazar(corte.reason);
+    corte?.addEventListener('abort', () => rechazar(corte.reason));
   });
 
 const fetchQueResponde = () => vi.fn<typeof fetch>().mockResolvedValue(new Response('ok'));
 
+// Una operación que no acaba nunca y no mira ninguna señal, como la espera entre reintentos de auth-js.
+const sinTerminar = () => new Promise<never>(() => undefined);
+
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -74,6 +87,99 @@ describe('conTiempoLimite', () => {
 
     expect(LIMITE_MS).toBe(4000);
     expect(espiar).toHaveBeenCalledWith(4000);
+  });
+});
+
+describe('conTiempoLimite con el plazo de la operación', () => {
+  it('[D-14] se corta al vencer el plazo de la operación aunque el límite de la petición sea mayor', async () => {
+    const plazo = new AbortController();
+    const peticion = conTiempoLimite(fetchQueNuncaResuelve, 5000, plazo.signal)(URL_DE_PRUEBA);
+
+    plazo.abort(new Error('plazo vencido'));
+
+    await expect(peticion).rejects.toThrow('plazo vencido');
+  });
+
+  it('[D-14] con el plazo ya vencido la petición no llega a esperar', async () => {
+    const plazo = AbortSignal.abort(new Error('plazo vencido'));
+
+    const peticion = conTiempoLimite(fetchQueNuncaResuelve, 5000, plazo)(URL_DE_PRUEBA);
+
+    await expect(peticion).rejects.toThrow('plazo vencido');
+  });
+});
+
+describe('conPlazoTotal', () => {
+  it('devuelve lo que devuelve la operación si acaba a tiempo', async () => {
+    await expect(conPlazoTotal(async () => 'listo', 50)).resolves.toBe('listo');
+  });
+
+  it('relanza el error de la operación tal cual', async () => {
+    const fallo = new Error('boom');
+
+    await expect(conPlazoTotal(() => Promise.reject(fallo), 50)).rejects.toBe(fallo);
+  });
+
+  it('[D-14] al vencer el plazo lanza PlazoVencido aunque la operación no mire ninguna señal', async () => {
+    const inicio = performance.now();
+
+    await expect(conPlazoTotal(sinTerminar, 50)).rejects.toBeInstanceOf(PlazoVencido);
+
+    expect(performance.now() - inicio).toBeLessThan(500);
+  });
+
+  it('[D-14] al vencer el plazo aborta la señal que dio a la operación', async () => {
+    let plazoDeLaOperacion: AbortSignal | undefined;
+    const operacion = (plazo: AbortSignal) => {
+      plazoDeLaOperacion = plazo;
+      return sinTerminar();
+    };
+
+    await expect(conPlazoTotal(operacion, 50)).rejects.toBeInstanceOf(PlazoVencido);
+
+    expect(plazoDeLaOperacion?.aborted).toBe(true);
+  });
+});
+
+describe('conPlazoTotal con el reloj parado', () => {
+  it('si la operación acaba antes no deja el plazo corriendo ni aborta nada', async () => {
+    vi.useFakeTimers();
+    let plazoDeLaOperacion: AbortSignal | undefined;
+
+    await conPlazoTotal(async (plazo) => {
+      plazoDeLaOperacion = plazo;
+    }, 50);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(vi.getTimerCount()).toBe(0);
+    expect(plazoDeLaOperacion?.aborted).toBe(false);
+  });
+
+  it('sin indicar el plazo usa PLAZO_TOTAL_MS, que deja la operación entera por debajo de 5 s', async () => {
+    vi.useFakeTimers();
+    let vencido = false;
+    const espera = conPlazoTotal(sinTerminar).catch(() => {
+      vencido = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(PLAZO_TOTAL_MS - 1);
+    const antesDelPlazo = vencido;
+    await vi.advanceTimersByTimeAsync(1);
+    await espera;
+
+    expect(antesDelPlazo).toBe(false);
+    expect(vencido).toBe(true);
+    expect(PLAZO_TOTAL_MS).toBeLessThan(5000);
+  });
+});
+
+describe('PlazoVencido', () => {
+  it('es un error con un nombre propio y un mensaje que dice cuánto se esperó', () => {
+    const error = new PlazoVencido(4500);
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('PlazoVencido');
+    expect(error.message).toContain('4500');
   });
 });
 
