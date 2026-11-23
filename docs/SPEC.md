@@ -1292,6 +1292,7 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 OK de Vladys a SPEC + plan («ok», tras ver el resumen y las 3 preguntas con recomendación «sí»): commits con usuario `donpapaya14` y nombre real; repo privado durante la construcción y público al final; GATE 3 en dos tiempos.
 - 2026-11-23 Los tipos de agente `develop` y `testing` no estaban cargados en la sesión que construye (se abrió fuera del repo): se lanzan como `ejecutor-sonnet` con la primera línea «Lee `.claude/agents/develop.md` (o `testing.md`) y trabaja exactamente como dice», como prevé «Cómo encaja con el flujo de la casa».
 - 2026-11-23 Pendientes del paso 1 para pasos posteriores: (a) quien cambie `src/app/page.tsx` sustituye el test provisional de `tests/proceso/enunciado.test.ts`; (b) `AGENTS.md` que reescribe `next dev` va a `.gitignore` (paso 16); (c) el job `desplegar` de `gate.yml` necesita `npx playwright install --with-deps chromium` antes del smoke (paso 16); (d) `trinquete --actualizar` siempre después de `git add`; (e) valorar eslint 10 y `vitest.config.mts` en el paso 16.
+- 2026-11-23 Gate de diseño: OK de Vladys («ok») al tablero de muestra FOSO (capturas 1440×900 y 390×844 del commit 3c1b407). Pendiente menor visto en la captura móvil: el grano del fondo no cubre toda la altura de página; se corrige en el paso 12 (armazón) o en la siguiente ronda de f01.
 - 2026-11-23 Concepto visual FOSO, sin librería de componentes y con la paleta por defecto de Tailwind apagada (descartado: shadcn/ui).
 
 ## Umbrales
