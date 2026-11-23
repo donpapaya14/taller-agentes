@@ -66,7 +66,8 @@ export function TarjetaOrden({ orden, puedeEntregar, accionAvanzar, turno }: Pro
       className="entra-del-foso flex flex-col gap-e4 rounded-pieza border border-raya bg-chapa p-e4"
       style={{ '--turno': turno } as CSSProperties}
     >
-      <h3>
+      {/* El título ocupa el ancho de la tarjeta y es el contenedor de la placa, que se achica hasta que cabe. */}
+      <h3 className="@container">
         {/* El enlace no pasa del ancho de la tarjeta; la placa recorta lo que no cabe. */}
         <Link
           href={fichaDe(orden.id)}

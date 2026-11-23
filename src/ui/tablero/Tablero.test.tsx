@@ -150,4 +150,15 @@ describe('Tablero: textos más largos que la tarjeta', () => {
 
     expect([...enlace.classList]).toContain('max-w-full');
   });
+
+  // La placa mide su tamaño contra el contenedor más cercano (tokens.css): sin contenedor, una
+  // matrícula válida de ocho caracteres se recortaba en la columna estrecha de 1024 px (D-13).
+  it('[D-13] el título de la tarjeta es el contenedor de la placa', () => {
+    render(<Tablero ordenes={[orden()]} puedeEntregar={false} />);
+
+    const titulo = screen.getByRole('heading', { level: 3 });
+
+    expect([...titulo.classList]).toContain('@container');
+    expect(within(titulo).getByRole('link', { name: /4821 KLM/ })).toBeTruthy();
+  });
 });

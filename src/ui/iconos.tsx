@@ -40,3 +40,39 @@ export function IconoLlave(props: PropsIcono) {
     </Icono>
   );
 }
+
+/** Tres columnas de distinta altura: el tablero de órdenes. */
+export function IconoTablero(props: PropsIcono) {
+  return (
+    <Icono {...props}>
+      <path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z" />
+    </Icono>
+  );
+}
+
+/** Una caja con su cinta: el almacén de recambios. */
+export function IconoRecambios(props: PropsIcono) {
+  return (
+    <Icono {...props}>
+      <path d="M3 8l9-5 9 5v9l-9 5-9-5zM3 8l9 5 9-5M12 13v9" />
+    </Icono>
+  );
+}
+
+/** Una puerta con la flecha saliendo. */
+export function IconoSalir(props: PropsIcono) {
+  return (
+    <Icono {...props}>
+      <path d="M10 4H4v16h6M14 8l4 4-4 4M18 12H9" />
+    </Icono>
+  );
+}
+
+/** Punta de flecha que indica que algo se despliega; gira al abrirse. */
+export function IconoDespliegue(props: PropsIcono) {
+  return (
+    <Icono {...props}>
+      <path d="M9 5l7 7-7 7" />
+    </Icono>
+  );
+}

@@ -1,9 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import Inicio from '@/app/page';
 
 const raiz = resolve(import.meta.dirname, '../..');
 
@@ -19,8 +16,16 @@ describe('enunciado', () => {
     expect(existsSync(ruta('src/app/layout.tsx'))).toBe(true);
   });
 
-  it('la portada provisional muestra el nombre FOSO', () => {
-    expect(renderToStaticMarkup(createElement(Inicio))).toBe('<main>FOSO</main>');
+  // Sustituye al test provisional del paso 1 (SPEC, Decisiones): aquí solo se fija el texto del
+  // enunciado en la portada. Cómo se pinta y a quién redirige lo prueba src/app/page.test.tsx.
+  it('la portada presenta FOSO con la frase del enunciado y enlaza a /login y /proceso', () => {
+    const portada = readFileSync(ruta('src/app/page.tsx'), 'utf8');
+
+    expect(portada).toContain(
+      'Gestión de taller: órdenes, recambios y facturas. La construyeron tres agentes.',
+    );
+    expect(portada).toContain('href="/login"');
+    expect(portada).toContain('href="/proceso"');
   });
 
   // El paso 2 crea .claude/agents; hasta entonces no hay estructura que comprobar.
