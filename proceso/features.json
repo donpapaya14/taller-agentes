@@ -15,7 +15,7 @@
     "id": "f03-nucleo",
     "titulo": "Reglas del taller",
     "resumen": "Las reglas de negocio del taller como funciones puras, con tests de propiedades en los cálculos.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f04-base-datos",
