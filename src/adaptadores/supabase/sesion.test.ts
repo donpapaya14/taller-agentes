@@ -36,6 +36,34 @@ const sinUsuario = {
   auth: { getUser: async () => ({ data: { user: null }, error: new Error('x') }) },
 };
 
+const FALLOS_DE_RED_O_TIEMPO: [string, Error][] = [
+  [
+    'un tiempo agotado',
+    new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+  ],
+  ['una petición abortada', new DOMException('This operation was aborted', 'AbortError')],
+  ['un fallo de red', new TypeError('fetch failed')],
+];
+const OTRO_FALLO = new Error('el almacén de cookies se rompió');
+
+const clienteQueLanza = (error: Error) => ({
+  auth: {
+    getUser: async () => {
+      throw error;
+    },
+  },
+});
+
+// Lo que devuelve supabase-js de verdad cuando fetch falla: el fallo va en `error`, no se lanza.
+const clienteConAuthCaido = {
+  auth: {
+    getUser: async () => ({
+      data: { user: null },
+      error: Object.assign(new Error('fetch failed'), { name: 'AuthRetryableFetchError' }),
+    }),
+  },
+};
+
 function conUsuarioYRespuesta(respuesta: { data: unknown; error: { message: string } | null }) {
   const eq = vi.fn(() => ({ maybeSingle: async () => respuesta }));
   const from = vi.fn(() => ({ select: () => ({ eq }) }));
@@ -45,6 +73,7 @@ function conUsuarioYRespuesta(respuesta: { data: unknown; error: { message: stri
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.resetAllMocks();
 });
 
@@ -91,6 +120,26 @@ describe('leerSesion', () => {
     await expect(leerSesion()).rejects.toThrow(
       'No se pudo cargar tu taller. Inténtalo de nuevo en unos minutos.',
     );
+  });
+});
+
+describe('leerSesion sin respuesta de Auth', () => {
+  it.each(FALLOS_DE_RED_O_TIEMPO)('[D-14] si Auth falla por %s no hay sesión', async (_, error) => {
+    crearClienteServidor.mockResolvedValue(clienteQueLanza(error));
+
+    expect(await leerSesion()).toBeNull();
+  });
+
+  it('[D-14] un error que no es de red ni de tiempo no se traga', async () => {
+    crearClienteServidor.mockResolvedValue(clienteQueLanza(OTRO_FALLO));
+
+    await expect(leerSesion()).rejects.toThrow(OTRO_FALLO.message);
+  });
+
+  it('[D-14] si Auth contesta con un fallo de red tampoco hay sesión', async () => {
+    crearClienteServidor.mockResolvedValue(clienteConAuthCaido);
+
+    expect(await leerSesion()).toBeNull();
   });
 });
 
@@ -158,5 +207,37 @@ describe('refrescarSesion', () => {
       'Falta la variable de entorno SUPABASE_PUBLISHABLE_KEY',
     );
     expect(createServerClient).not.toHaveBeenCalled();
+  });
+});
+
+describe('refrescarSesion sin respuesta de Auth', () => {
+  beforeEach(() => {
+    vi.stubEnv('SUPABASE_URL', 'https://proyecto.example');
+    vi.stubEnv('SUPABASE_PUBLISHABLE_KEY', 'clave-publicable');
+  });
+
+  it.each(FALLOS_DE_RED_O_TIEMPO)(
+    '[D-14] si Auth falla por %s cuenta como sin sesión',
+    async (_, error) => {
+      createServerClient.mockReturnValue(clienteQueLanza(error));
+
+      expect(await refrescarSesion(peticion())).toEqual({
+        haySesion: false,
+        cookies: [],
+        cabeceras: {},
+      });
+    },
+  );
+
+  it('[D-14] un error que no es de red ni de tiempo no se traga', async () => {
+    createServerClient.mockReturnValue(clienteQueLanza(OTRO_FALLO));
+
+    await expect(refrescarSesion(peticion())).rejects.toThrow(OTRO_FALLO.message);
+  });
+
+  it('[D-14] si Auth contesta con un fallo de red tampoco hay sesión', async () => {
+    createServerClient.mockReturnValue(clienteConAuthCaido);
+
+    expect((await refrescarSesion(peticion())).haySesion).toBe(false);
   });
 });

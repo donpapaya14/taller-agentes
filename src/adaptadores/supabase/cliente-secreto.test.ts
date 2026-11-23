@@ -17,6 +17,8 @@ const VARIABLES = [
 
 beforeEach(() => {
   VARIABLES.forEach((nombre) => vi.stubEnv(nombre, `valor de ${nombre}`));
+  // La URL se valida: tiene que ser una de verdad.
+  vi.stubEnv('SUPABASE_URL', 'https://proyecto.example');
   createClient.mockReturnValue({ marca: 'cliente secreto' });
 });
 
@@ -31,7 +33,7 @@ describe('crearClienteSecreto', () => {
 
     expect(cliente).toEqual({ marca: 'cliente secreto' });
     expect(createClient).toHaveBeenCalledWith(
-      'valor de SUPABASE_URL',
+      'https://proyecto.example',
       'valor de SUPABASE_SECRET_KEY',
       { auth: { persistSession: false, autoRefreshToken: false } },
     );

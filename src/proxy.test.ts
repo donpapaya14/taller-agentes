@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ErrorDeEntorno } from '@/adaptadores/supabase/entorno';
 import { config, proxy } from './proxy';
 
 const { refrescarSesion } = vi.hoisted(() => ({ refrescarSesion: vi.fn() }));
@@ -69,8 +70,66 @@ describe('proxy', () => {
   });
 });
 
+describe('proxy sin el entorno de Supabase', () => {
+  const sinEntorno = () =>
+    refrescarSesion.mockRejectedValue(
+      new ErrorDeEntorno('Falta la variable de entorno SUPABASE_URL'),
+    );
+
+  it.each(['/', '/login', '/proceso', '/api/cron/restablecer'])(
+    '[C-1] %s sigue su camino en vez de dar un 500',
+    async (ruta) => {
+      sinEntorno();
+
+      const respuesta = await proxy(peticion(ruta));
+
+      expect(respuesta.status).toBe(200);
+      expect(respuesta.headers.get('x-middleware-next')).toBe('1');
+    },
+  );
+
+  it.each(['/tablero', '/ordenes/abc', '/recambios', '/ordenes/a.b'])(
+    '[C-1] %s responde 503 con un mensaje que se entiende',
+    async (ruta) => {
+      sinEntorno();
+
+      const respuesta = await proxy(peticion(ruta));
+
+      expect(respuesta.status).toBe(503);
+      expect(respuesta.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+      expect(await respuesta.text()).toBe(
+        'El servicio no está disponible ahora mismo. Inténtalo de nuevo en unos minutos.',
+      );
+    },
+  );
+
+  it('[D-14] un fallo que no es del entorno no se traga', async () => {
+    refrescarSesion.mockRejectedValue(new Error('la base de datos se ha roto'));
+
+    await expect(proxy(peticion('/tablero'))).rejects.toThrow('la base de datos se ha roto');
+    await expect(proxy(peticion('/proceso'))).rejects.toThrow('la base de datos se ha roto');
+  });
+});
+
 describe('matcher del proxy', () => {
   const coincide = (ruta: string) => new RegExp(`^${config.matcher[0]}$`).test(ruta);
+
+  // Las extensiones de archivo estático que el SPEC deja fuera del proxy.
+  const EXTENSIONES_ESTATICAS = [
+    'svg',
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'webp',
+    'ico',
+    'css',
+    'js',
+    'map',
+    'txt',
+    'xml',
+    'woff2',
+  ];
 
   it('corre en las páginas y en la ruta del cron', () => {
     const rutas = ['/', '/login', '/tablero', '/ordenes/abc', '/api/cron/restablecer'];
@@ -78,8 +137,24 @@ describe('matcher del proxy', () => {
     expect(rutas.map(coincide)).toEqual(rutas.map(() => true));
   });
 
-  it('no corre en los archivos estáticos de Next ni en los que tienen extensión', () => {
-    const rutas = ['/_next/static/chunks/a.js', '/_next/image', '/favicon.ico', '/logo.svg'];
+  it('[C-1] una ruta privada con punto pasa por el proxy', () => {
+    expect(coincide('/ordenes/a.b')).toBe(true);
+    expect(coincide('/logo.svg')).toBe(false);
+  });
+
+  it('corre en cualquier ruta con punto que no termine en una extensión estática', () => {
+    const rutas = ['/ordenes/v1.2', '/recambios/a.b.c', '/ordenes/a.svg.b'];
+
+    expect(rutas.map(coincide)).toEqual(rutas.map(() => true));
+  });
+
+  it('no corre en los archivos estáticos de Next ni en los de extensión estática', () => {
+    const rutas = [
+      '/_next/static/chunks/a.js',
+      '/_next/image',
+      '/favicon.ico',
+      ...EXTENSIONES_ESTATICAS.map((extension) => `/archivo.${extension}`),
+    ];
 
     expect(rutas.map(coincide)).toEqual(rutas.map(() => false));
   });
