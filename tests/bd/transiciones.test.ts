@@ -4,9 +4,9 @@ import { como, crearBd, sembrarDosTalleres } from './arnes';
 const CICLO = ['recibido', 'en_reparacion', 'listo', 'entregado'] as const;
 type Estado = (typeof CICLO)[number];
 
-const INSERTAR_LINEA = `insert into public.orden_lineas
-                          (taller_id, orden_id, recambio_id, cantidad, precio_unitario_centimos)
-                        values ($1, $2, $3, 1, 1250)`;
+// Sin precio: lo copia del recambio la base de datos.
+const INSERTAR_LINEA = `insert into public.orden_lineas (taller_id, orden_id, recambio_id, cantidad)
+                        values ($1, $2, $3, 1)`;
 
 const bd = await crearBd();
 const semilla = await sembrarDosTalleres(bd);

@@ -139,16 +139,17 @@ async function sembrarTaller(sql: Sql, letra: 'A' | 'B') {
     'insert into public.ordenes (taller_id, vehiculo_id, descripcion) values ($1, $2, $3)',
     [taller, vehiculo, 'Revisión de frenos'],
   );
+  // Sin precio: lo copia del recambio el disparador, también para el superusuario.
   await sql(
-    `insert into public.orden_lineas
-       (taller_id, orden_id, recambio_id, cantidad, precio_unitario_centimos)
-     values ($1, $2, $3, 1, 1250)`,
+    `insert into public.orden_lineas (taller_id, orden_id, recambio_id, cantidad)
+     values ($1, $2, $3, 1)`,
     [taller, orden, recambioDeLaLinea],
   );
   return { taller, jefe, cliente, vehiculo, recambio, orden };
 }
 
-// Como superusuario, fuera de `como`: los datos de partida no pasan por la RLS.
+// Como superusuario, fuera de `como`: los datos de partida no pasan por la RLS ni por los
+// permisos de columna.
 export async function sembrarDosTalleres(bd: Bd): Promise<Semilla> {
   const a = await sembrarTaller(bd.sql, 'A');
   const b = await sembrarTaller(bd.sql, 'B');

@@ -35,8 +35,17 @@ revoke all on all tables in schema public from anon;
 revoke all on all tables in schema public from authenticated;
 grant select on public.talleres, public.miembros to authenticated;
 grant select, insert, update, delete
-  on public.clientes, public.vehiculos, public.recambios, public.ordenes, public.orden_lineas
+  on public.clientes, public.vehiculos, public.recambios
   to authenticated;
+-- Órdenes y líneas, por columnas. Por la API nadie escribe el precio por hora, el número de
+-- factura ni las fechas de una orden, ni el precio de una línea (C-3): los ponen la base de datos
+-- y sus funciones. Una vez creadas, la orden no cambia de taller ni de vehículo, ni la línea de
+-- taller, orden o recambio.
+grant select, delete on public.ordenes, public.orden_lineas to authenticated;
+grant insert (taller_id, vehiculo_id, descripcion), update (estado, descripcion, mano_obra_minutos)
+  on public.ordenes to authenticated;
+grant insert (taller_id, orden_id, recambio_id, cantidad), update (cantidad)
+  on public.orden_lineas to authenticated;
 
 create policy talleres_leer on public.talleres for select to authenticated
   using (id = app.mi_taller());
@@ -76,7 +85,8 @@ create policy recambios_borrar on public.recambios for delete to authenticated
   using (taller_id = app.mi_taller() and app.mi_rol() = 'jefe');
 
 -- Órdenes: nadie las entrega ni les pone número de factura con un update directo, y una orden
--- entregada ya no se cambia ni se borra.
+-- entregada ya no se cambia ni se borra. Las condiciones sobre estado y número de factura siguen
+-- aunque la API ya no pueda enviar esas columnas: son la segunda barrera.
 create policy ordenes_leer on public.ordenes for select to authenticated
   using (taller_id = app.mi_taller());
 create policy ordenes_crear on public.ordenes for insert to authenticated

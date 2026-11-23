@@ -32,9 +32,9 @@ const INSERTAR = {
                 (taller_id, referencia, nombre, precio_centimos, stock, stock_minimo)
               values ($1, $2, $3, 990, 5, 1)`,
   ordenes: 'insert into public.ordenes (taller_id, vehiculo_id, descripcion) values ($1, $2, $3)',
-  orden_lineas: `insert into public.orden_lineas
-                   (taller_id, orden_id, recambio_id, cantidad, precio_unitario_centimos)
-                 values ($1, $2, $3, 1, 1250)`,
+  // Sin precio: lo copia del recambio la base de datos.
+  orden_lineas: `insert into public.orden_lineas (taller_id, orden_id, recambio_id, cantidad)
+                 values ($1, $2, $3, 1)`,
 };
 
 const CAMBIOS_SOBRE_B = [
@@ -60,10 +60,41 @@ const BARRIDO_SIN_FILTRO = [
   'delete from public.recambios',
 ];
 
+// Como superusuario no hay RLS ni permisos de columna: lo que frena estos cruces es el esquema.
+const CRUCES_EN_EL_ESQUEMA = [
+  [
+    'orden_lineas_taller_id_recambio_id_fkey',
+    'update public.orden_lineas set recambio_id = $2 where taller_id = $1',
+    'recambioB',
+  ],
+  [
+    'orden_lineas_taller_id_orden_id_fkey',
+    'update public.orden_lineas set orden_id = $2 where taller_id = $1',
+    'ordenB',
+  ],
+  [
+    'ordenes_taller_id_vehiculo_id_fkey',
+    `insert into public.ordenes (taller_id, vehiculo_id, descripcion) values ($1, $2, 'Cruzada')`,
+    'vehiculoB',
+  ],
+  [
+    'vehiculos_taller_id_cliente_id_fkey',
+    `insert into public.vehiculos (taller_id, cliente_id, matricula) values ($1, $2, '9999 ZZZ')`,
+    'clienteB',
+  ],
+] as const;
+
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
 const errorDePolitica = (tabla: string) =>
   `new row violates row-level security policy for table "${tabla}"`;
+const errorDeClaveAjena = (restriccion: string) =>
+  `violates foreign key constraint "${restriccion}"`;
+const sinPermiso = (tabla: string) => `permission denied for table ${tabla}`;
+// El disparador busca el precio del recambio solo en el taller de la línea: con uno de otro taller
+// lo deja en null, y el not null rechaza la fila antes de que se mire la clave ajena.
+const RECAMBIO_DE_OTRO_TALLER =
+  'null value in column "precio_unitario_centimos" of relation "orden_lineas" violates not-null constraint';
 
 const bd = await crearBd();
 const semilla = await sembrarDosTalleres(bd);
@@ -198,20 +229,104 @@ describe('cambios entre talleres', () => {
 
 describe('cambio de taller', () => {
   it('[C-2] nadie cambia de taller una fila', async () => {
-    for (const tabla of ['clientes', 'vehiculos', 'recambios', 'orden_lineas']) {
-      const mudanza = como(bd, semilla.jefeA, (sql) =>
+    const mudanza = (tabla: string) =>
+      como(bd, semilla.jefeA, (sql) =>
         sql(`update public.${tabla} set taller_id = $1`, [semilla.tallerB]),
       );
 
-      await expect(mudanza).rejects.toThrow(errorDePolitica(tabla));
+    for (const tabla of ['clientes', 'vehiculos', 'recambios']) {
+      await expect(mudanza(tabla)).rejects.toThrow(errorDePolitica(tabla));
     }
-    const mudanzaDeOrden = como(bd, semilla.jefeA, (sql) =>
-      sql('update public.ordenes set taller_id = $1 where id = $2', [
-        semilla.tallerB,
-        semilla.ordenA,
-      ]),
-    );
+    // En órdenes y líneas la API ni siquiera puede escribir taller_id.
+    for (const tabla of ['ordenes', 'orden_lineas']) {
+      await expect(mudanza(tabla)).rejects.toThrow(sinPermiso(tabla));
+    }
+  });
+});
 
-    await expect(mudanzaDeOrden).rejects.toThrow('TALLER_INMUTABLE');
+describe('referencias dentro del taller', () => {
+  const insertarComoJefeA = (tabla: keyof typeof INSERTAR, parametros: unknown[]) =>
+    como(bd, semilla.jefeA, (sql) => sql(INSERTAR[tabla], parametros));
+
+  it('[C-2] una línea de A no puede usar un recambio de B', async () => {
+    const insercion = insertarComoJefeA('orden_lineas', [
+      semilla.tallerA,
+      semilla.ordenA,
+      semilla.recambioB,
+    ]);
+
+    await expect(insercion).rejects.toThrow(RECAMBIO_DE_OTRO_TALLER);
+  });
+
+  it('[C-2] una orden de A no puede usar un vehículo de B', async () => {
+    const insercion = insertarComoJefeA('ordenes', [semilla.tallerA, semilla.vehiculoB, 'Cruzada']);
+
+    await expect(insercion).rejects.toThrow(
+      errorDeClaveAjena('ordenes_taller_id_vehiculo_id_fkey'),
+    );
+  });
+
+  it('[C-2] un vehículo de A no puede colgar de un cliente de B', async () => {
+    const insercion = insertarComoJefeA('vehiculos', [
+      semilla.tallerA,
+      semilla.clienteB,
+      '9999 ZZZ',
+    ]);
+
+    await expect(insercion).rejects.toThrow(
+      errorDeClaveAjena('vehiculos_taller_id_cliente_id_fkey'),
+    );
+  });
+
+  it('[C-2] tampoco como superusuario se cruzan talleres', async () => {
+    const linea = bd.sql(INSERTAR.orden_lineas, [
+      semilla.tallerA,
+      semilla.ordenA,
+      semilla.recambioB,
+    ]);
+    await expect(linea).rejects.toThrow(RECAMBIO_DE_OTRO_TALLER);
+
+    for (const [restriccion, texto, id] of CRUCES_EN_EL_ESQUEMA) {
+      const cruce = bd.sql(texto, [semilla.tallerA, semilla[id]]);
+
+      await expect(cruce, restriccion).rejects.toThrow(errorDeClaveAjena(restriccion));
+    }
+  });
+});
+
+describe('recolgar una línea en otra orden', () => {
+  const RECOLGAR = 'update public.orden_lineas set orden_id = $1 where orden_id = $2';
+  const ORDEN_ENTREGADA_DE_A = `insert into public.ordenes (taller_id, vehiculo_id, descripcion, estado)
+                                select taller_id, vehiculo_id, 'Entregada', 'entregado'
+                                  from public.ordenes where id = $1
+                                returning id`;
+
+  it('[C-2] por la API nadie cambia la orden de una línea', async () => {
+    for (const usuario of [semilla.jefeA, semilla.mecanicoA]) {
+      const recolgada = como(bd, usuario, (sql) => sql(RECOLGAR, [semilla.ordenB, semilla.ordenA]));
+
+      await expect(recolgada).rejects.toThrow(sinPermiso('orden_lineas'));
+    }
+  });
+
+  // La política es la segunda barrera. Con el permiso de la columna abierto solo dentro de la
+  // transacción, que se deshace al salir, decide ella sola.
+  it('[C-2] la política sola tampoco deja recolgar una línea en una orden de B ni en una entregada', async () => {
+    const destinos: ((sql: Sql) => Promise<unknown>)[] = [
+      async () => semilla.ordenB,
+      async (sql) => (await sql(ORDEN_ENTREGADA_DE_A, [semilla.ordenA]))[0].id,
+    ];
+
+    for (const destino of destinos) {
+      const recolgada = como(bd, semilla.jefeA, async (sql) => {
+        await sql('reset role');
+        const orden = await destino(sql);
+        await sql('grant update (orden_id) on public.orden_lineas to authenticated');
+        await sql('set local role authenticated');
+        return sql(RECOLGAR, [orden, semilla.ordenA]);
+      });
+
+      await expect(recolgada).rejects.toThrow(errorDePolitica('orden_lineas'));
+    }
   });
 });
