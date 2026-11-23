@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { leerEntorno, leerEntornoSecreto } from './entorno';
+import { leerEntorno } from './entorno';
+import { leerEntornoSecreto } from './entorno-secreto';
 
 // Se salta RLS. Solo para restablecer la demo (acción y cron) y el script de usuarios de demo,
 // nunca para datos de negocio.
