@@ -1,0 +1,71 @@
+{
+  "feature": "f04-base-datos",
+  "ronda": 1,
+  "fecha": "2026-11-23",
+  "commitRevisado": "aef51eb0393c85b326996595cc1fb911a0d5b9f7",
+  "veredicto": "PASA",
+  "comandos": [
+    {
+      "comando": "git log --oneline main..paso-6",
+      "resultado": "OK",
+      "resumen": "Dos commits: c7a67d0 feat(f04-base-datos) [ronda 1] y aef51eb, que integra main en la rama. La copia de trabajo está limpia y en paso-6."
+    },
+    {
+      "comando": "git diff --stat main...paso-6",
+      "resultado": "OK",
+      "resumen": "8 archivos nuevos y 1125 líneas añadidas: supabase/config.toml, las migraciones 01 (esquema) y 02 (RLS), tests/bd/arnes.ts y los tests de aislamiento, roles, transiciones y catálogo. No toca src, package.json, calidad.json, la configuración de eslint ni la de vitest, ni los .md de los agentes."
+    },
+    {
+      "comando": "npm run check:full",
+      "resultado": "OK",
+      "resumen": "Sale con 0. eslint y tsc limpios; vitest con 6 archivos y 57 tests en verde (52 de tests/bd y 5 de tests/proceso), también bajo cobertura; cobertura de 100 % sobre el único archivo de src, con umbrales de 80 y 75; dependency-cruiser sin violaciones (6 módulos); puertas de umbrales, manipulación, duplicado (0 clones), código muerto y trinquete sin hallazgos."
+    },
+    {
+      "comando": "npm run gate:rls",
+      "resultado": "OK",
+      "resumen": "Sale con 0: 4 archivos y 52 tests de tests/bd en verde (aislamiento 8, catálogo 18, roles 7 y transiciones 19)."
+    },
+    {
+      "comando": "npx vitest run --sequence.shuffle --sequence.seed=<7919, 15838, 23757, 31676 y 39595>",
+      "resultado": "OK",
+      "resumen": "Cinco ejecuciones en orden aleatorio: 6 archivos y 57 tests en verde cada vez, así que ningún test depende del orden."
+    },
+    {
+      "comando": "gitleaks git --config .gitleaks.toml --log-opts main..paso-6 --redact --no-banner",
+      "resultado": "OK",
+      "resumen": "Sale con 0: escanea 1 commit (el otro es un merge sin cambios propios) y no encuentra nada."
+    },
+    {
+      "comando": "git diff main...paso-6 | grep -E <atajos de D-8, emojis de D-12, relleno y claves>",
+      "resultado": "OK",
+      "resumen": "Sin atajos de D-8 (skip, only, todo, eslint-disable, @ts-*, any, innerHTML, catch vacío), sin emojis y sin claves ni NEXT_PUBLIC_*. El patrón de relleno solo acierta la palabra «todo» en cuatro comentarios en español, y que acierte muestra que el grep funciona."
+    },
+    {
+      "comando": "git diff --check main...paso-6 && npx prettier --check tests/bd/*.ts",
+      "resultado": "OK",
+      "resumen": "Sin espacios sobrantes y los cinco .ts de tests/bd con el formato de Prettier. Prettier no tiene parser para config.toml, que no se comprobó."
+    },
+    {
+      "comando": "npx vitest run tests/sondeo (61 sondeos propios más uno extra, sobre una copia del repo en el scratchpad de Testing)",
+      "resultado": "OK",
+      "resumen": "Fuera del repo y sin red, solo PGlite en memoria: referencias entre talleres, nulos y límites, roles y escalada, y catálogo de Postgres. Los resultados están en las observaciones."
+    },
+    {
+      "comando": "node mutantes.mjs",
+      "resultado": "OK",
+      "resumen": "74 mutantes sobre las migraciones 01 y 02 de una copia del repo, que no se toca: 59 mueren y 15 sobreviven. El detalle está en las observaciones."
+    },
+    {
+      "comando": "node confirmar.mjs",
+      "resultado": "OK",
+      "resumen": "Dos mutantes supervivientes (R25 y R31) aplicados a la copia y sondeados: con el primero una línea de A se recuelga de una orden de B y con el segundo un mecánico se sube a jefe. El detalle está en las observaciones."
+    },
+    {
+      "comando": "node validar.mts proceso/f04-base-datos/ronda-1.json (esquemaRonda de main, copiado al scratchpad de Testing)",
+      "resultado": "OK",
+      "resumen": "Este archivo cumple el esquema zod que main usa para leer las rondas."
+    }
+  ],
+  "fallos": [],
+  "observaciones": "Revisión del commit aef51eb de paso-6, la punta del rango (el trabajo propio de la rama es c7a67d0), con el diff de tres puntos contra main: 8 archivos nuevos y 1125 líneas. Main avanzó mientras se revisaba (7 commits nuevos, el último aade2c2: se integró f02-proceso y cambió el SPEC), así que el diff de dos puntos main..paso-6 enseña los archivos de esa feature al revés; no es obra de la rama, y check:full corrió sobre la rama sin esos commits. Todo corrió sobre PGlite en memoria; no se tocó ningún Supabase real.\nDirectrices. D-3 se cumple: 8 de 8 tablas con RLS activado; ninguna ACL nombra a anon ni a PUBLIC; authenticated solo tiene lo que usan sus políticas (select en talleres y miembros, select, insert, update y delete en las cinco tablas de negocio y nada en demo_control); las siete tablas con taller llevan política con app.mi_taller() y todas van to authenticated. Los cuatro tests [D-3] están en verde y npm run spec:check da D-3 como verificada. D-3 dice «toda tabla» y demo_control queda sin política por diseño del SPEC (no tiene taller; con RLS activado y sin política ni permisos nadie la toca por la API, que es más estricto): conviene que el arquitecto matice esa frase. D-5 en la base de datos: las tres columnas de importe (recambios.precio_centimos, orden_lineas.precio_unitario_centimos y ordenes.precio_hora_centimos) son integer y public no tiene ninguna columna numeric, real ni money. D-4: gitleaks sin hallazgos y ninguna clave ni variable NEXT_PUBLIC_* en el diff. D-7: eslint con los límites de calidad.json también recorre tests/ y sale en verde; el archivo más largo tiene 217 líneas. D-8 y D-12: sin atajos, emojis ni relleno en los 8 archivos. D-1, D-2, D-6, D-9, D-10, D-11, D-13 y D-14 no se ven afectadas: no hay código en src, ni adaptadores ni pantallas, por eso no se corrió gate:e2e. D-15: este archivo se validó contra el esquema zod de main (src/adaptadores/proceso/esquema.ts).\nLo que se intentó y no rompe (61 sondeos propios, en el scratchpad de Testing y fuera del repo). El jefe y el mecánico de A no leen ni insertan nada en B y el jefe de B no lee nada de A. Un upsert sobre una orden de B falla por la política, y el de un mecánico sobre recambios también. Una línea de A no se recoloca en una orden de B. Un usuario autenticado sin taller ve 0 filas, no inserta y app.mi_taller() y app.mi_rol() le dan NULL. Ni el jefe ni el mecánico dan de alta o suben de rol a un miembro, cambian siguiente_factura, renombran, crean o borran un taller, borran miembros ni truncan tablas: todo da permission denied. anon no llama a app.mi_taller() (permission denied for schema app). Un entero fuera de rango da error. Las órdenes entregadas y sus líneas no cambian ni se borran: lo cubren los tests de la rama y los mutantes R06, R07, R21, R24 y R27 mueren.\nCasos que rompen y que ninguna directriz cubre, con su evidencia.\n1. Referencias entre talleres. Las claves foráneas son de una sola columna y las políticas de orden_lineas solo miran la orden, así que el jefe de A inserta una línea de su orden que apunta a un recambio de B (sondeo A1: 1 fila), cambia el recambio de su línea por el de B (A4), crea una orden de A con un vehículo de B (A2) y un vehículo de A con un cliente de B (A3). No lee nada de B (la unión de esa línea con recambios devuelve 0 filas, A6), pero con un id ajeno que existe la inserción sale bien y con uno inventado falla con 23503 (A7): quien conozca un id puede comprobar si existe en otro taller (los uuid no se adivinan: riesgo bajo). Importa en f05: el contrato del paso 7 descuenta stock con update public.recambios set stock = stock - cantidad where id = ... sin mirar el taller y la función es security definer, así que una línea con un recambio de B le restaría stock a B (sin comprobar: cerrar_orden aún no existe). El SPEC de main ya trae el paso 6b (commit e05b373), que cambia el contrato con claves compuestas (taller_id, x_id) y que esta rama todavía no implementa; la ronda siguiente tiene que comprobar que A1 a A4 pasan a dar error de clave ajena.\n2. NULL que pasa los check. Según el catálogo admiten NULL orden_lineas.cantidad, precio_unitario_centimos, recambio_id y orden_id; recambios.precio_centimos, stock y stock_minimo; ordenes.vehiculo_id; vehiculos.cliente_id y miembros.rol, y un check como cantidad > 0 da por buena una fila con NULL. Probado: un mecánico inserta una línea con cantidad, precio y recambio a NULL (B1), un jefe un recambio sin stock ni precio (B2) y un mecánico una orden sin vehículo (B3). La base de datos las acepta; qué pasa al leerlas depende de los repositorios del paso 10. El paso 6b de main pone los not null que faltan y tampoco está aún en la rama.\n3. Precios que escribe el mecánico. ordenes.precio_hora_centimos no tiene check: el mecánico lo deja en -4500 con un insert y con un update (B4a y B4b). Además cambia el precio y la cantidad de una línea de una orden sin entregar (precio 1 donde el recambio cuesta 1250: sondeo extra), porque las políticas de orden_lineas no limitan columnas. La tabla de amenazas del SPEC cuenta «cambia stock o precios» entre lo que el rol debe impedir; el precio del recambio sí es solo del jefe, estos dos no. El paso 6b de main lo cubre con permisos por columna, un disparador que copia el precio de la línea y un check del precio por hora; la ronda siguiente tiene que volver a probar B4a, B4b, B9 y el sondeo extra.\n4. Texto. Las cadenas vacías pasan el not null (referencia, nombre, matrícula y descripción vacíos y un nombre de cliente en blanco: B6), no hay tope de longitud (una descripción de 1.000.000 de caracteres y una matrícula de 100.000 entran: B7) y la matrícula no se normaliza: '1234BCD' y '1234 bcd' conviven con '1234 BCD' en el mismo taller (B8; la idéntica sí choca con la restricción única). entregada_en se puede poner a mano en una orden sin entregar (B9).\n5. anon conserva EXECUTE sobre public.ordenes_reglas() por los permisos por defecto (D3 del catálogo). No es explotable: Postgres rechaza llamar a un disparador como función (0A000, sondeo C13b). Las funciones del esquema app sí están cerradas a anon.\nBarrido de 74 mutantes sobre las migraciones 01 y 02, en una copia del repo que no se toca: 59 mueren y 15 sobreviven. Cinco no cambian nada observable: E30 (endurecer miembros.rol con not null), R03 (el with check de recambios sin jefe, porque el using ya lo exige), R22 (quitar o.taller_id del exists, porque la RLS de ordenes ya lo aplica dentro de la política), R38 (anon no tiene uso del esquema app) y R39 (quitar el grant de uso de app a authenticated: los 52 tests siguen en verde y las políticas no lo necesitan). Los otros diez son huecos de test. E15 y E16: los valores por defecto de precio_hora_centimos (4500) y siguiente_factura (1) no tienen test. E17 y E18: nada fija a integer los importes; pasarlos a numeric o a real no rompe ningún test (D-5 se cumple hoy, sin vigilancia en la base de datos). E28, R36 y R37: ningún test mira que las dos funciones security definer y el disparador lleven search_path fijado. R25 y R26: quitar del with check de orden_lineas_cambiar el exists entero (R25) o solo su condición de estado (R26) no rompe ningún test, porque ninguno recoloca una línea en otra orden; con R25 aplicado, el sondeo A5 pasa de error a éxito y una línea de A se recuelga de una orden de B. R31: con un grant de update sobre miembros y una política para cualquier miembro, un mecánico se sube a jefe (sondeo C1: rol = jefe) y los 52 tests siguen en verde; ningún test intenta escribir en talleres ni en miembros (C-2 lo pide) y el de catálogo solo compara permisos con políticas.\nSin comprobar: el comportamiento sobre el Postgres real de Supabase (PGlite 0.6 imita los roles y los permisos por defecto y lee auth.uid() de un ajuste de sesión; la nube lo lee del JWT) y supabase/config.toml, que ningún test lee (el registro cerrado se comprueba en el paso 9). npm run spec:check se corrió solo para informar: 1 verificada (D-3), 0 en rojo, 13 sin test, que crean los pasos siguientes, y 1 manual (D-13); sale con 1 y no cuenta como comando de la ronda."
+}
