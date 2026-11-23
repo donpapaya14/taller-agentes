@@ -1,0 +1,66 @@
+{
+  "feature": "f03-nucleo",
+  "ronda": 1,
+  "fecha": "2026-11-23",
+  "commitRevisado": "e53bcf1ca468cd4b6a67100d3018c4bbbbbdf7b9",
+  "veredicto": "PASA",
+  "comandos": [
+    {
+      "comando": "npm run check:full",
+      "resultado": "OK",
+      "resumen": "Salida 0. Lint y tipos sin avisos. 171 tests en 10 archivos, todos en verde. Cobertura del 100 % en líneas, ramas, funciones y sentencias (umbral 80 y 75). dependency-cruiser sin violaciones (22 módulos, 30 dependencias). Puertas de umbrales, manipulación, duplicado (0 clones) y trinquete sin hallazgos."
+    },
+    {
+      "comando": "npm run gate:mutacion",
+      "resultado": "OK",
+      "resumen": "Stryker sobre src/nucleo: 243 mutantes, 243 muertos, 0 vivos y 0 sin cobertura. Puntuación 100 con umbral 80."
+    },
+    {
+      "comando": "for i in $(seq 1 40); do npx vitest run src/nucleo --reporter=dot; done",
+      "resultado": "OK",
+      "resumen": "40 de 40 ejecuciones en verde, 163 tests cada una. fast-check usa otra semilla en cada ejecución, así que los tests de propiedades no son inestables."
+    },
+    {
+      "comando": "node -e <cuenta por ID los tests [D-n] de reports/vitest.json>",
+      "resultado": "OK",
+      "resumen": "D-1: 1 test, D-5: 35 tests, D-6: 2 tests, todos en verde. Total: 171 pasan, 0 fallan, 0 pendientes, 0 todo."
+    },
+    {
+      "comando": "grep -nE 'Date|Math\\.random|process\\.|fetch\\(|node:|Intl\\.|toLocale|setTimeout|setInterval|performance\\.|globalThis|window\\.|document\\.|console\\.' src/nucleo/*.ts | grep -v '\\.test\\.ts'",
+      "resultado": "OK",
+      "resumen": "Una sola coincidencia, un comentario (importe.ts:70, «Sin Intl.NumberFormat»). Ni reloj, ni azar, ni entorno, ni red, ni disco en el código del núcleo."
+    },
+    {
+      "comando": "grep -rnE '\\.skip\\b|\\.only\\b|\\bxit\\(|\\bxdescribe\\(|\\bxtest\\(|\\bit\\.todo|\\btest\\.todo|eslint-disable|@ts-|\\bany\\b|dangerously|inner[H]TML|catch|istanbul|c8 ignore|v8 ignore|[Ss]tryker (disable|ignore)|NOSONAR' src tests",
+      "resultado": "OK",
+      "resumen": "Sin coincidencias: ni skip, only o todo, ni comentarios que apaguen eslint, TypeScript, cobertura o mutación, ni any, ni HTML inyectado, ni catch."
+    },
+    {
+      "comando": "node -e <busca emojis (\\p{Extended_Pictographic}) en los .ts, .tsx y .css de src y tests>",
+      "resultado": "OK",
+      "resumen": "0 emojis. Lectura del código: los textos que salen del núcleo (etiquetas de estado, leyenda de demostración, avisos de WhatsApp y el error «Importe no válido») están en español."
+    },
+    {
+      "comando": "gitleaks git --config .gitleaks.toml --log-opts='main..paso-5' --redact",
+      "resultado": "OK",
+      "resumen": "1 commit con parche escaneado (el merge no lleva parche propio), sin fugas."
+    },
+    {
+      "comando": "depcruise src --config .dependency-cruiser.cjs, sobre una copia de src fuera del repo con un src/nucleo/malo.ts añadido",
+      "resultado": "OK",
+      "resumen": "Control de que la puerta de D-1 alcanza el núcleo nuevo. Sin tocar la copia: 0 violaciones y los 7 módulos nuevos cruzados. Con un import de node:fs en el núcleo: salida 1 por la regla nucleo-puro. Con Date.now(), process.env.HOME, fetch() y Math.random() sin imports: salida 0. Detalle en observaciones."
+    },
+    {
+      "comando": "node --import ./register-ts.mjs sonda-a.mjs; node --import ./register-ts.mjs sonda-b.mjs (scripts fuera del repo)",
+      "resultado": "OK",
+      "resumen": "Entradas límite y basura sobre los siete módulos: vacíos, ceros, negativos, NaN, Infinity, roles y estados inventados, entradas congeladas, textos de 100 000 y 1 000 000 de caracteres (2 millones de espacios en 16 ms, sin cuelgues), Unicode raro y desbordamiento. Los 16 pares de estados coinciden con el contrato y las entradas no se modifican. Lo que rompe fuera de contrato no incumple ninguna directriz y está en observaciones."
+    },
+    {
+      "comando": "node --import ./register-ts.mjs sonda-c.mjs (script fuera del repo)",
+      "resultado": "OK",
+      "resumen": "11 propiedades de fast-check con 200 000 repeticiones (20 000 en teléfonos con separadores y 50 000 en documento) contra oráculos independientes: BigInt para totales e IVA, las expresiones del contrato para teléfono y matrícula, un mapa de sumas para el descuento de stock y la suma de las filas para el documento. Ninguna falla."
+    }
+  ],
+  "fallos": [],
+  "observaciones": "Sin fallos: nada de lo que sigue incumple una directriz. Son casos que rompen y que ninguna directriz cubre, o límites de la prueba.\n\nAlcance. Revisé git diff main...paso-5 (15 archivos: siete módulos de src/nucleo con su test y tests/proceso/arquitectura.test.ts) y git log main..paso-5 (879a49c y el merge e53bcf1). git diff main..paso-5 a secas también muestra docs/SPEC.md porque main avanzó después del merge (c2f9bb3, solo SPEC): no es trabajo de esta rama. El diff no toca la configuración de las puertas ni package.json. No corrí npm run gate:e2e: no hay interfaz en el diff y tests/e2e no existe en la rama. No corrí spec:check entero; en el informe de vitest hay tests con ID de D-1 (1), D-5 (35) y D-6 (2), los tres en verde.\n\nEntradas fuera del contrato que el núcleo deja pasar. Los tipos las impiden y las capas que validan con zod (D-2) todavía no existen en la rama:\n1. Roles. puede (permisos.ts:15) da las tres acciones del mecánico a cualquier valor que no sea 'jefe': puede('visitante', 'crear_orden'), puede(undefined, 'crear_orden') y puede(null, 'crear_orden') devuelven true. Falla abierto, no cerrado.\n2. Stock. descontar (stock.ts:22, 36 y 45) no mira la cantidad: con -3 sobre un stock de 5 devuelve ok: true y stock 8; con NaN, ok: true y stock NaN; con 1.5, stock 3.5. calcularTotales sí rechaza cantidades menores o iguales que 0.\n3. Dinero, desbordamiento. calcularTotales exige enteros seguros en cada entrada (importe.ts:21) pero no comprueba productos ni sumas (importe.ts:49-55). Con cantidad 94906267 y precio 94906267, válidos uno a uno, recambiosCentimos sale 9007199515875288 y el exacto (BigInt) es 9007199515875289: pierde un céntimo sin error.\n4. Dinero, formato. formatearEuros (importe.ts:71) no valida: 12.5 da '0,12.5 €', NaN da 'NaN,NaN €' e Infinity da 'In.fin.ity,NaN €'. No incumple ninguna directriz y el SPEC de main (c2f9bb3) ya lo recoge como cambio de contrato de f03-nucleo decidido por el arquitecto, así que va aquí y no en fallos.\n5. Dinero, documento. La fila de mano de obra no multiplica (documento.ts:55-64): 100 min a 50,00 €/h salen '1,67 h', '50,00 €' y '83,33 €', y 1,67 por 50 son 83,50; 10 min a 45,00 €/h salen '0,17 h' y '7,50 €' (0,17 por 45 son 7,65). El importe es el exacto y las horas con dos decimales son del contrato: no es un error de cálculo, pero en un documento impreso se verá como una cuenta que no cuadra.\n6. Teléfono. normalizarTelefono devuelve null para un número bien escrito que trae marcas invisibles de dirección (U+202A, U+202C o U+200E), que pueden colarse al copiar un contacto de una app de mensajería; el botón de WhatsApp saldría desactivado.\n7. Bordes menores. puedeTransicionar('recibido', null) y puedeTransicionar('entregado', null) devuelven true porque null === null (orden.ts:23); siguienteEstado('xxx') devuelve 'recibido'. mensajeAviso con un estado inventado lanza TypeError ('cancelada') o escribe basura ('toString' da '[object Object]') (whatsapp.ts:25). enlaceAviso lanza URIError si el nombre del taller trae un sustituto suelto como U+D83D (whatsapp.ts:40); el test «con los caracteres que lleve» genera grafemas y no llega a ese caso. normalizarMatricula convierte con toUpperCase caracteres no ASCII en letras válidas (matricula.ts:8): 'ß1234BC' sale como 'SS1234BC'.\n\nPuerta de D-1. El test [D-1] solo ejecuta dependency-cruiser, que mira imports. En una copia de src fuera del repo, un src/nucleo/malo.ts con un import de node:fs da salida 1 (regla nucleo-puro) y otro con Date.now(), process.env.HOME, fetch() y Math.random(), sin imports, da salida 0. El código entregado no usa ninguno (grep de la ronda), pero la directriz promete «sin reloj, sin entorno» y su prueba no puede demostrarlo."
+}
