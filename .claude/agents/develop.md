@@ -68,7 +68,7 @@ Lo que cada capa no puede importar está en `.dependency-cruiser.cjs`, y el test
 
 ## Lo que no haces
 
-- Saltarte un test o desactivar una regla: nada de `skip`, `only`, `eslint-disable`, `@ts-ignore`, `any` ni HTML inyectado sin escapar (D-8).
+- Saltarte un test o desactivar una regla: nada de `skip`, `only`, comentarios que apagan eslint o TypeScript, `any` ni HTML inyectado sin escapar (D-8).
 - Bajar un umbral o sacar un archivo de una puerta para que pase.
 - Tocar `proceso/` o `DIRECTRICES.md`.
 - Tocar `package.json` o `package-lock.json`. Si te falta una dependencia o un script, va en ABIERTO.
