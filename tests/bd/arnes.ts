@@ -169,6 +169,24 @@ export async function sembrarDosTalleres(bd: Bd): Promise<Semilla> {
   };
 }
 
+// Los tres usuarios de demostración que app.sembrar_demo() busca por correo para crear los
+// miembros. En la nube los crea scripts/crear-usuarios-demo.mjs con el cliente de administración.
+export async function sembrarUsuariosDemo(
+  bd: Bd,
+): Promise<{ jefe: string; mecanico: string; jefeOtro: string }> {
+  const crearUsuario = (correo: string) =>
+    insertarDevolviendoId(
+      bd.sql,
+      'insert into auth.users (id, email) values (gen_random_uuid(), $1)',
+      [correo],
+    );
+  return {
+    jefe: await crearUsuario('jefe@tallerdemo.example'),
+    mecanico: await crearUsuario('mecanico@tallerdemo.example'),
+    jefeOtro: await crearUsuario('jefe@otrotaller.example'),
+  };
+}
+
 // Ejecuta `fn` con la sesión que tendría ese usuario en la API de Supabase (null = visitante sin
 // sesión) y deshace todo al terminar. Dentro de `fn` se usa el `sql` que recibe: `bd.sql` se
 // quedaría esperando a que acabe la transacción.
