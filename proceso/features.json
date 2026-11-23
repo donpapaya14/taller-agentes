@@ -27,7 +27,7 @@
     "id": "f05-funciones",
     "titulo": "Entrega de órdenes y demo en la base de datos",
     "resumen": "Funciones de Postgres para entregar una orden, asignarle número de factura y devolver la demo a su estado inicial.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f06-acceso",
