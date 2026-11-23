@@ -1,0 +1,175 @@
+/*
+ * Tokens de FOSO: el taller de noche visto desde el foso (SPEC, «Diseño → Concepto FOSO»).
+ * Son los únicos valores de color, tipografía, espaciado, forma y movimiento del proyecto.
+ * Los componentes los usan con las clases que registra el bloque @theme del final; el CSS
+ * propio, con var(--token). Fuera de este archivo no hay ningún valor suelto.
+ */
+
+:root {
+  /* Superficies: el negro de aceite del foso y la chapa de las piezas. */
+  --foso: #0b0c0e;
+  --chapa: #131518;
+  --chapa-alta: #1c1f24;
+
+  /* Texto principal y secundario. */
+  --hueso: #f2efe8;
+  --acero: #9aa1aa;
+
+  /* La lámpara portátil: acento y acción principal, con el texto encima en --foso. */
+  --lampara: #ff6a1a;
+
+  /* Testigos del salpicadero: aviso (en reparación, bajo mínimo), listo y avería. */
+  --ambar: #ffb020;
+  --testigo: #3ddc84;
+  --averia: #ff5a5a;
+
+  /* Líneas finas de separación; no hay sombras. */
+  --raya: rgba(242, 239, 232, 0.12);
+
+  /* La matrícula española: placa clara, caracteres negros y banda azul. */
+  --placa: #f4f4f0;
+  --placa-texto: #111214;
+  --placa-banda: #0b3fa8;
+
+  /*
+   * Atmósfera: rejilla de suelo cada 64 px, grano fino y la franja de seguridad que corona
+   * el tablero. La rejilla y el grano salen del hueso, sin tonos nuevos: la rejilla es hueso
+   * al 5 %, igual que --raya es hueso al 12 %.
+   */
+  --rejilla: rgba(242, 239, 232, 0.05);
+  --suelo:
+    linear-gradient(var(--rejilla) var(--linea), transparent var(--linea)),
+    linear-gradient(90deg, var(--rejilla) var(--linea), transparent var(--linea));
+  --suelo-paso: var(--e8);
+  --grano: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .94 0 0 0 0 .91 .45 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grano-tesela: 180px;
+  --franja: 6px;
+  --franja-seguridad: repeating-linear-gradient(
+    -45deg,
+    var(--lampara) 0 var(--e2),
+    var(--foso) var(--e2) var(--e4)
+  );
+
+  /*
+   * Tipografía. Las familias las sirve next/font (src/ui/fuentes.ts) en --fuente-titular,
+   * --fuente-texto y --fuente-dato. Cuerpo base de 18 px; ninguno baja de 14 px.
+   */
+  --cuerpo-nota: 0.875rem;
+  --cuerpo-menor: 1rem;
+  --cuerpo-base: 1.125rem;
+  --cuerpo-mayor: 1.375rem;
+  --cuerpo-columna: clamp(1.75rem, 1rem + 1.5vw, 2.5rem);
+  --cuerpo-portada: clamp(3.5rem, 2rem + 6vw, 7rem);
+  --cuerpo-matricula: 1.75rem;
+  --cuerpo-matricula-grande: 2.75rem;
+  --interlinea-texto: 1.5;
+  --interlinea-titular: 0.95;
+  --interlinea-portada: 0.85;
+  --interlinea-placa: 1;
+  --interletra-titular: 0.01em;
+  --interletra-dato: 0.04em;
+  --interletra-placa: 0.06em;
+  /* Martian Mono estrechada, como los caracteres altos y juntos de una placa. */
+  --placa-ajuste: 'wdth' 80;
+
+  /* Espaciado: escala de 4 px. */
+  --e1: 0.25rem;
+  --e2: 0.5rem;
+  --e3: 0.75rem;
+  --e4: 1rem;
+  --e5: 1.5rem;
+  --e6: 2rem;
+  --e7: 3rem;
+  --e8: 4rem;
+  /* Alto mínimo de todo botón de acción: 56 px, para el pulgar y con guantes. */
+  --toque: 3.5rem;
+
+  /* Forma: esquinas de 2 px, 4 px en la matrícula; líneas de 1 px. */
+  --radio: 2px;
+  --radio-placa: 4px;
+  --linea: 1px;
+  --foco: 2px;
+  --foco-separacion: 2px;
+  /* El filete negro de la placa va por dentro de su borde; la banda es proporcional a los caracteres. */
+  --placa-reborde: var(--e1);
+  --placa-banda-ancho: 0.8em;
+
+  /* Movimiento: las tarjetas suben del foso escalonadas cada 40 ms. */
+  --escalon: 40ms;
+  --entrada: 480ms;
+  --rapido: 120ms;
+  --curva-salida: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@theme inline {
+  /* Fuera el tema por defecto de Tailwind: solo se generan las clases de estos tokens. */
+  --*: initial;
+
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+
+  --color-foso: var(--foso);
+  --color-chapa: var(--chapa);
+  --color-chapa-alta: var(--chapa-alta);
+  --color-hueso: var(--hueso);
+  --color-acero: var(--acero);
+  --color-lampara: var(--lampara);
+  --color-ambar: var(--ambar);
+  --color-testigo: var(--testigo);
+  --color-averia: var(--averia);
+  --color-raya: var(--raya);
+  --color-placa: var(--placa);
+  --color-placa-texto: var(--placa-texto);
+  --color-placa-banda: var(--placa-banda);
+
+  --font-titular: var(--fuente-titular);
+  --font-texto: var(--fuente-texto);
+  --font-dato: var(--fuente-dato);
+  --default-font-family: var(--fuente-texto);
+  --default-mono-font-family: var(--fuente-dato);
+
+  --font-weight-redonda: 400;
+  --font-weight-media: 500;
+  --font-weight-seminegra: 600;
+  --font-weight-negra: 800;
+  --font-weight-supernegra: 900;
+
+  --text-nota: var(--cuerpo-nota);
+  --text-nota--line-height: var(--interlinea-texto);
+  --text-menor: var(--cuerpo-menor);
+  --text-menor--line-height: var(--interlinea-texto);
+  --text-base: var(--cuerpo-base);
+  --text-base--line-height: var(--interlinea-texto);
+  --text-mayor: var(--cuerpo-mayor);
+  --text-mayor--line-height: var(--interlinea-titular);
+  --text-columna: var(--cuerpo-columna);
+  --text-columna--line-height: var(--interlinea-titular);
+  --text-portada: var(--cuerpo-portada);
+  --text-portada--line-height: var(--interlinea-portada);
+  /* «matricula» y no «placa»: text-placa ya es el color de la placa. */
+  --text-matricula: var(--cuerpo-matricula);
+  --text-matricula--line-height: var(--interlinea-placa);
+  --text-matricula-grande: var(--cuerpo-matricula-grande);
+  --text-matricula-grande--line-height: var(--interlinea-placa);
+
+  --tracking-titular: var(--interletra-titular);
+  --tracking-dato: var(--interletra-dato);
+  --tracking-placa: var(--interletra-placa);
+
+  --spacing-e1: var(--e1);
+  --spacing-e2: var(--e2);
+  --spacing-e3: var(--e3);
+  --spacing-e4: var(--e4);
+  --spacing-e5: var(--e5);
+  --spacing-e6: var(--e6);
+  --spacing-e7: var(--e7);
+  --spacing-e8: var(--e8);
+  --spacing-toque: var(--toque);
+  --spacing-banda: var(--placa-banda-ancho);
+
+  --radius-pieza: var(--radio);
+  --radius-placa: var(--radio-placa);
+
+  --default-transition-duration: var(--rapido);
+  --default-transition-timing-function: var(--curva-salida);
+}
