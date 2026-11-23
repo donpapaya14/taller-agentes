@@ -1,0 +1,111 @@
+{
+  "feature": "f06-acceso",
+  "ronda": 2,
+  "fecha": "2026-11-23",
+  "commitRevisado": "9f1d36cc8939f8b0619f4a680e6ceec444204c4e",
+  "veredicto": "PASA",
+  "comandos": [
+    {
+      "comando": "git log --oneline main..paso-8; git diff --stat main...paso-8; git diff --name-status bda9bba..paso-8; git diff --name-only main...paso-8 -- package.json package-lock.json calidad.json calidad-base.json eslint.config.mjs vitest.config.ts .dependency-cruiser.cjs knip.json stryker.config.mjs DIRECTRICES.md docs/SPEC.md scripts/puertas",
+      "resultado": "OK",
+      "resumen": "HEAD 9f1d36c, la fusión de main en la rama. Siete commits: ebe49de [ronda 1], bda9bba (fusión), 8ee5c73 (ronda 1 de Testing), 8d90f38 (fusión), 2f00589 [ronda 2], 09a5168 [cambio de contrato] y 9f1d36c (fusión). Main está en 1cec1a7 y ya está dentro de la rama (git log paso-8..main sale vacío), así que el diff de dos y el de tres puntos coinciden: 25 archivos, 1725 líneas añadidas y 2 quitadas. La lista de paquetes, calidad, eslint, vitest, dependency-cruiser, knip, stryker, DIRECTRICES.md, SPEC y scripts/puertas sale con 0 archivos: la rama no relaja ninguna puerta ni toca su configuración. El único archivo nuevo de src/aplicacion o src/nucleo es acceso.ts, con acceso.test.ts al lado."
+    },
+    {
+      "comando": "npm run check:full",
+      "resultado": "OK",
+      "resumen": "Sale con 0 en 5,3 s. eslint y tsc limpios; vitest con 19 archivos y 212 tests en verde; cobertura de 100 % en sentencias (163/163), funciones (52/52) y líneas (142/142) y de 98,43 % en ramas (63/64), con umbrales de 80 y 75; la rama sin cubrir es leer-rondas.ts:33, de f02-proceso, no de este diff. dependency-cruiser sin violaciones (40 módulos, 72 dependencias). Puertas: umbrales sin hallazgos, duplicado con 0 clones en 34 archivos y trinquete sin hallazgos. El detector de manipulación da 7 avisos y ningún fallo: 6 mocks añadidos en tests (cliente-secreto, cliente-servidor, entorno-secreto, opciones-cliente, sesion y proxy) y la ronda 1, aceptada por su UMBRAL."
+    },
+    {
+      "comando": "npm run build; grep -c 'unsafe-eval' .next/routes-manifest.json; grep -rlE 'SUPABASE_SECRET_KEY|leerEntornoSecreto|CRON_SECRET|DEMO_PASSWORD' .next/static | wc -l",
+      "resultado": "OK",
+      "resumen": "El build sale con 0 y 0 avisos. Next 16.4.6 con Turbopack compila sin cacheComponents ni partialPrefetching y reconoce «ƒ Proxy (Middleware)». El manifiesto de rutas lleva script-src 'self' 'unsafe-inline' y 0 apariciones de unsafe-eval; el JavaScript del navegador (.next/static) no contiene ningún nombre de secreto (0 archivos). El árbol de git queda sin cambios."
+    },
+    {
+      "comando": "for t in D-1 D-2 D-4 D-6 D-7 D-8 D-14 D-15 C-1 C-18; do npx vitest run -t \"\\[$t\\]\"; done",
+      "resultado": "OK",
+      "resumen": "Los diez salen con 0: [D-2] 77 tests, [D-4] 6, [D-7] 1, [D-8] 1, [D-14] 17, [D-15] 7, [C-1] 20 y [C-18] 11. [D-1] y [D-6] no tienen todavía ningún test con su ID (0 tests, 212 omitidos): D-1 lo cubre npm run arquitectura, dentro de check:full, y D-6 se comprobó a mano. Cada adaptador y caso de uso nuevo (entorno, entorno-secreto, cliente-servidor, cliente-secreto, sesion, tiempo-limite y acceso) tiene al menos un test [D-2] con entrada basura; opciones-cliente no recibe ningún dato (solo lee NODE_ENV) y sus tests son [D-4] y [D-14]."
+    },
+    {
+      "comando": "npx vitest run --sequence.shuffle --sequence.seed=<7919, 15838, 23757, 31676 y 39595>",
+      "resultado": "OK",
+      "resumen": "Cinco ejecuciones en orden aleatorio: 19 archivos y 212 tests en verde cada vez, así que ningún test depende del orden."
+    },
+    {
+      "comando": "npm run gate:cabeceras; npm run gate:tipos",
+      "resultado": "OK",
+      "resumen": "gate:cabeceras: 9 tests en verde. gate:tipos (tsc --noEmit) sale con 0."
+    },
+    {
+      "comando": "npx eslint src scripts/crear-usuarios-demo.mjs tests next.config.ts --rule '{\"max-lines-per-function\":[\"error\",{\"max\":40,\"skipBlankLines\":true,\"skipComments\":true}]}' -f json",
+      "resultado": "OK",
+      "resumen": "Con el límite en 40 solo se pasan cuatro funciones, todas bloques describe de tests: sesion.test.ts:153 con 48 líneas y tiempo-limite.test.ts:18 con 44 son de este diff; esquema.test.ts:112 y rondas.test.ts:79 vienen de main. Con el 50 de D-7 no se pasa ninguna. El archivo más largo del diff, sesion.test.ts, tiene 243 líneas brutas de 300."
+    },
+    {
+      "comando": "git diff main...paso-8 -- src tests scripts next.config.ts | grep -E '^\\+' | grep -v '^+++' | grep -n -E 'eslint[-]disable|@ts[-](ignore|expect[-]error|nocheck)|(istanbul|v8|c8)[ ]ignore|Stryker[ ]disable|:[[:space:]]*any\\b|\\.(skip|only|todo)\\(|dangerously|console\\.|prettier[-]ignore'",
+      "resultado": "OK",
+      "resumen": "Sale una sola línea y es inofensiva: el patrón que el propio test [D-8] arma por piezas en tests/proceso/normas.test.ts:17. Ningún comentario que apague eslint, TypeScript, cobertura o mutación, ningún any, skip, only, console ni HTML sin escapar en lo añadido de src, tests, scripts y next.config.ts."
+    },
+    {
+      "comando": "git diff main...paso-8 -- src tests scripts next.config.ts | grep -E '^\\+' | grep -v '^+++' | perl -CS -ne 'print if /[\\x{1F000}-\\x{1FAFF}\\x{2600}-\\x{27BF}\\x{FE0F}]/'",
+      "resultado": "OK",
+      "resumen": "Sin emojis en lo añadido (0 líneas). Los mensajes que ve el usuario (503 del proxy, errores de leerSesion y de entorno) y los del script están en español."
+    },
+    {
+      "comando": "grep -rn 'NEXT_PUBLIC_' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git --exclude-dir=reports --exclude-dir=coverage .",
+      "resultado": "OK",
+      "resumen": "Solo salen documentos (DIRECTRICES.md, docs/SPEC.md, .claude/agents/develop.md) y la línea del test [D-4] que busca el prefijo (tests/seguridad/claves.test.ts:46). Ninguna variable NEXT_PUBLIC en src, next.config.ts, .env.example ni scripts."
+    },
+    {
+      "comando": "gitleaks git --no-banner --redact --log-opts=main..paso-8 .; gitleaks git --no-banner --redact .; gitleaks dir --no-banner --redact src scripts tests next.config.ts .env.example",
+      "resultado": "OK",
+      "resumen": "gitleaks 8.30.1 sin hallazgos en los tres: 4 commits del rango, 25 commits del historial de la rama y los directorios de código. Es la mitad de D-4 que habla del repo."
+    },
+    {
+      "comando": "En una copia desechable fuera del repo (rsync de la rama y cp -cR de node_modules): src/ui/Intruso.tsx con 'use client' que importa * de entorno-secreto.ts y se pinta desde src/app/page.tsx; npx vitest run tests/seguridad/claves.test.ts y npm run build; después el mismo componente importando entorno.ts, npm run build y grep de los nombres de secretos en .next/static",
+      "resultado": "OK",
+      "resumen": "Comprueba que el arreglo del fallo de la ronda 1 funciona. Con entorno-secreto.ts importado desde un componente de cliente, el test [D-4] da 2 passed (no lo ve) y el build sale con 1: «'server-only' cannot be imported from a Client Component module». Con entorno.ts importado desde el cliente, el build sale con 0 y .next/static tiene 0 archivos con nombres de secretos (el módulo público sí aparece). El guarda de compilación está donde debe."
+    },
+    {
+      "comando": "SUPABASE_URL=http://127.0.0.1:3342 SUPABASE_PUBLISHABLE_KEY=clave-falsa npx next start -p 3341 contra un Auth falso local en 127.0.0.1:3342; peticiones HTTP crudas con y sin cookie de sesión (vigente y caducada)",
+      "resultado": "OK",
+      "resumen": "Sin cookie: /, /login, /proceso y /api/cron/restablecer siguen su camino (200 o 404 de Next, que aún no tiene esas páginas); /tablero, /ordenes/abc, /ordenes/a.b y /recambios dan 307 a /login. Con sesión vigente, /login da 307 a /tablero. Con sesión caducada y refresco válido el proxy renueva con una sola llamada y la cookie sale con Path=/; Max-Age=34560000; Secure; HttpOnly; SameSite=lax; la portada estática, que lleva s-maxage=31536000, sale con Cache-Control private, no-cache, no-store, must-revalidate, max-age=0. Las respuestas 200, 307, 404 y 503 llevan las cabeceras de seguridad; las 308 de barra final y de doble barra, que genera Next antes del proxy, no."
+    },
+    {
+      "comando": "Con el Auth falso en cuatro modos (acepta la conexión y no contesta, conexión rechazada, responde 500, tarda 6 s) y cookie con el token sin caducar o caducado: peticiones a /, /tablero y /login con medida de tiempo y registro de las llamadas que recibe el Auth",
+      "resultado": "OK",
+      "resumen": "Sondeo de resiliencia; el resultado importante, con las cifras, está en la observación Uno. Token sin caducar: responde a los 4,0 s con el Auth colgado, a los 4,0 s con el Auth lento y en 1-2 ms con la conexión rechazada o con un 500. Token caducado: 30,2 s con el Auth colgado (6 llamadas a POST /auth/v1/token?grant_type=refresh_token en los segundos 0,0, 4,2, 8,6, 13,4, 19,0 y 26,2), 25,4 s con la conexión rechazada y 25,4 s con un 500, también en la portada."
+    },
+    {
+      "comando": "npm run start -- -p 3341 sin SUPABASE_URL ni SUPABASE_PUBLISHABLE_KEY (con env -u), y con SUPABASE_URL='no es una url'; peticiones con y sin cookie de sesión y lectura del log del servidor",
+      "resultado": "OK",
+      "resumen": "En los dos casos /, /login, /proceso y /api/cron/restablecer siguen su camino y /tablero, /ordenes/a.b y las demás privadas responden 503 text/plain «El servicio no está disponible ahora mismo. Inténtalo de nuevo en unos minutos.» con las cabeceras de seguridad, con o sin cookie. El log del servidor solo trae las líneas de arranque: no dice qué variable falla (observación Tres)."
+    },
+    {
+      "comando": "Peticiones crudas con cookies de sesión mal formadas (base64 no válido, base64 con bytes que no son UTF-8, JSON roto, JSON sin campos, texto suelto, trozos .0 y .1 sueltos, valor de 7000 caracteres, dos cookies con el mismo nombre) y con rutas con trampa (/api/cron/../tablero, /api/cron/%2e%2e/tablero, /proceso/../tablero, /%74ablero, /TABLERO, /Login, /tablero;x=1, /tablero%2f, /tablero%00, //tablero)",
+      "resultado": "OK",
+      "resumen": "Ninguna cookie rota da un 500: las privadas van a /login y las públicas siguen; la de JSON sin campos se borra con Max-Age=0. Todas las rutas con trampa que acaban en una privada dan 307 a /login sin sesión; //tablero da un 308 normalizado por Next. Una cabecera Cookie de 20000 caracteres da 431 desde Node, sin cabeceras de seguridad (límite de Node, antes de Next)."
+    },
+    {
+      "comando": "En una copia desechable fuera del repo: npx next dev -p 3341 y Chromium sin cabeza a 390 px con la API de Playwright de la rama (entrando por localhost): abrir / y recoger la CSP, los eventos securitypolicyviolation y la consola; repetido tras quitar 'unsafe-eval' del modo desarrollo en la copia",
+      "resultado": "OK",
+      "resumen": "Con el código de la rama: estado 200, texto «FOSO», script-src 'self' 'unsafe-inline' 'unsafe-eval', 0 violaciones, consola con solo el aviso de React DevTools y «[HMR] connected», y sin desplazamiento horizontal. Control en negativo, sin 'unsafe-eval' en desarrollo: 11 violaciones script-src con destino eval y React avisa de que necesita eval en desarrollo y el entorno no se lo permite. El motivo de la CSP de desarrollo del paso 8b es real y, en producción, el manifiesto del build no lo lleva."
+    },
+    {
+      "comando": "En una copia desechable fuera del repo: una página de servidor (src/app/yo/page.tsx) que llama a leerSesion y pinta el resultado o su error, con npm run build y npm run start contra un Supabase falso (Auth y PostgREST de miembros); token vigente y caducado, sin fila, con dos filas, con la fila rota, PostgREST con 500 y PostgREST colgado",
+      "resultado": "OK",
+      "resumen": "Con las librerías de verdad: token vigente, la página pinta la sesión y Supabase recibe GET /rest/v1/miembros?select=taller_id,rol,nombre,talleres(nombre)&usuario_id=eq.<id> con el token del usuario. Token caducado: el proxy renueva con una llamada, la página usa el token nuevo y no intenta escribir cookies. Sin cookie: 307 a /login. Sin fila: «Tu cuenta no está asociada a ningún taller.»; dos filas: «No se pudo cargar tu taller. Inténtalo de nuevo en unos minutos.»; fila rota: «No se entienden los datos de tu taller. Vuelve a entrar o avisa al administrador.»; PostgREST con 500: 1 petición y el mismo mensaje de «No se pudo cargar» al instante; PostgREST colgado: 23,0 s con 4 peticiones (segundos 0, 5, 11 y 19), observación Uno."
+    },
+    {
+      "comando": "npx stryker run --concurrency 2 --reporters clear-text --mutate 'src/aplicacion/acceso.ts,src/proxy.ts,src/cabeceras.ts,src/adaptadores/supabase/entorno.ts,src/adaptadores/supabase/entorno-secreto.ts,src/adaptadores/supabase/opciones-cliente.ts,src/adaptadores/supabase/sesion.ts,src/adaptadores/supabase/cliente-servidor.ts,src/adaptadores/supabase/cliente-secreto.ts,src/adaptadores/supabase/tiempo-limite.ts'",
+      "resultado": "OK",
+      "resumen": "Sale con 0: 98,05 % sobre los diez archivos de src de la rama, con 201 mutantes muertos, 4 vivos y 1 con error; el umbral de rotura es 80. Cabeceras, acceso, tiempo-limite, opciones-cliente, entorno-secreto, cliente-servidor y cliente-secreto al 100 %. Los cuatro vivos, en las observaciones."
+    },
+    {
+      "comando": "En un clon desechable de la rama: un archivo nuevo en src/aplicacion con el comentario de TypeScript @ts[-]expect[-]error sobre una asignación mal tipada, git add y node scripts/puertas/detector-manipulacion.mjs --staged",
+      "resultado": "OK",
+      "resumen": "Sondeo de la fuerza de los detectores. El detector, que corre dentro de check:full, da FALLO [comprobacion-silenciada] y sale con 1. El test [D-8] sigue sin vigilar ese comentario (observación Tres), pero la puerta lo frena."
+    }
+  ],
+  "fallos": [],
+  "observaciones": "Ronda sin fallos: ninguna directriz queda incumplida con evidencia. Revisión del commit 9f1d36c de paso-8 (fusión de main en la rama), con el diff de tres puntos contra main: 25 archivos, 1725 líneas añadidas y 2 quitadas, con el archivo de la ronda 1 incluido. Main está en 1cec1a7 y ya está dentro de la rama. Desde la ronda 1 (bda9bba) hay dos commits de Develop: 2f00589, que arregla el fallo de D-4, y 09a5168, el cambio de contrato del paso 8b. Todo se probó en local y sin tocar ningún Supabase real: la app compilada se sirvió con next start contra un Supabase falso (Auth y PostgREST) en 127.0.0.1; el modo desarrollo y lo que exigía añadir código se probaron en copias desechables fuera del repo. Los servidores quedaron parados y el árbol de git, sin cambios.\nEl fallo de la ronda 1, cerrado. La clave secreta ya no se lee en entorno.ts: vive en entorno-secreto.ts, cuya primera línea es import 'server-only', y el test [D-4] exige esa línea en todo archivo de src que no sea test y contenga SUPABASE_SECRET_KEY (más cliente-secreto.ts, como antes). Demostrado con el comando de la copia desechable: un componente de cliente que importe entorno-secreto.ts rompe el build aunque el test [D-4] siga en verde, y uno que importe entorno.ts compila sin llevarse ningún secreto al navegador.\nUno, el importante para el arquitecto: el límite de 4 s del paso 8b acota cada petición a Supabase, no lo que tarda el proxy ni la página, porque supabase-js reintenta. Medido con la app compilada y un Supabase falso, sin tocar proxy.ts ni sesion.ts. Token de la cookie sin caducar y Auth que acepta la conexión y no contesta: el proxy responde a los 4,0 s, como dice el SPEC; con la conexión rechazada responde en 1-2 ms. Token caducado o a menos de 90 s de caducar, que es lo normal en quien vuelve pasada una hora (la caducidad por defecto del token de Supabase), y Auth que no contesta: 30,2 s. El proxy llama 6 veces a POST /auth/v1/token?grant_type=refresh_token (segundos 0,0, 4,2, 8,6, 13,4, 19,0 y 26,2); cada intento se corta a los 4 s, pero supabase-js los reintenta con espera creciente hasta 30 s (node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:4084-4108; margen de 90 s en lib/constants.js:6-13). Con ese mismo token caducado y la conexión rechazada, o con el Auth respondiendo 500, tarda 25,4 s: los 25 s que el SPEC dice que 8b quita (docs/SPEC.md:859 y :1269); en auth-js 2.119.2 el 500 también se reintenta (lib/fetch.js:32-34). Esos segundos se pagan en cualquier ruta, la portada incluida, porque el proxy corre en todas. En la página pasa algo parecido: con PostgREST que no contesta, leerSesion tarda 23,0 s y hace 4 peticiones GET /rest/v1/miembros (segundos 0, 5, 11 y 19: 4 s de límite más esperas de 1, 2 y 4 s de postgrest-js 2.119.2, node_modules/@supabase/postgrest-js/dist/index.cjs:63-83); acaba con «No se pudo cargar tu taller. Inténtalo de nuevo en unos minutos.». Los tests no lo ven porque mockean supabase-js y prueban conTiempoLimite por separado. No lo cuento como fallo de D-14: el contrato de 8b manda tratar la falta de respuesta de Auth como «sin sesión», en la consulta de miembros el usuario sí recibe un mensaje que entiende y ninguna directriz mide el tiempo. Lo que no se cumple es el efecto que el SPEC promete. Hay que decidir si se acota la operación entera o se corrigen esas frases.\nDos, el resto de lo que pide 8b, comprobado de extremo a extremo con la app compilada. La cookie de sesión sale con Secure, HttpOnly y SameSite=lax (la portada estática renovada lleva Cache-Control private, no-store y no se cachea con la cookie). Sin SUPABASE_URL ni SUPABASE_PUBLISHABLE_KEY, o con una URL que no es URL, las públicas siguen y las privadas dan 503 con mensaje en español y las cuatro cabeceras de seguridad. El matcher hace pasar /ordenes/a.b por el proxy (307 a /login sin sesión) y deja fuera /logo.svg. La CSP de producción no lleva unsafe-eval y la de desarrollo sí, y sin él next dev da 11 violaciones; a 390 px la portada no se desborda. Con leerSesion y las librerías de verdad la consulta que sale es la esperada y, con el token caducado, la página lee el token que renovó el proxy sin intentar escribir cookies: el motivo del comentario de cliente-servidor.ts se cumple. Las barras finales y dobles siguen dando 308 sin cabeceras, porque Next los genera antes del proxy.\nTres, pequeñas y sin directriz. El proxy se traga ErrorDeEntorno sin dejar rastro: con SUPABASE_URL mal puesta el servidor da 503 en las privadas y el log solo trae las líneas de arranque; antes el 500 dejaba «Falta la variable de entorno…» en el log, ahora quien despliega con una variable mal puesta no tiene ninguna pista. sesion.ts:55 descarta el error de PostgREST y lanza uno nuevo sin cause, así que el log no dice si fue conexión, permisos o RLS; leer-rondas.ts:34 sí encadena la causa. Tests que no fallarían: Stryker deja vivos los mismos cuatro de la ronda 1. sesion.ts:20 (z.enum(['jefe', 'mecanico']) pasa a ['jefe', ''] y nada falla, porque ningún test devuelve rol 'mecanico'); sesion.ts:52 (el argumento de .select no se comprueba; la prueba con la librería de verdad sí vio el valor correcto); proxy.ts:39 (NextResponse.next sin request: ningún test mira que la página reciba la sesión renovada; la prueba de extremo a extremo sí); y entorno.ts:18, equivalente, porque el mensaje ya lo pone z.string. El test [D-8] sigue sin vigilar @ts[-]expect[-]error, pero lo frena el detector de check:full. scripts/crear-usuarios-demo.mjs lee DEMO_PASSWORD sin recortar y acepta un valor en blanco, mientras que leerEntornoSecreto la recorta y rechaza el valor en blanco; con espacios en la variable, el script y el restablecer del paso 11 dejarían contraseñas distintas (leído en el código y en entorno-secreto.test.ts, no ejecutado). El script sigue sin tests ni cobertura.\nEstado de las observaciones de la ronda 1: cookie sin HttpOnly, cerrada; proxy con 500 sin variables de entorno o con una URL que no es URL, cerrada; entorno.ts con basura que no está vacía, cerrada (en blanco cuenta como ausente y la URL tiene que ser http o https, con 8 entradas basura en [D-2]); next.config con cacheComponents y partialPrefetching y matcher que dejaba fuera cualquier ruta con punto, cerrada; Auth que no contesta, cerrada solo a medias (Uno); tests que no fallarían, siguen los mismos; [D-8] sin @ts[-]expect[-]error, tapado por el detector (Tres); script sin tests, sigue.\nDirectriz por directriz. D-1: dependency-cruiser sin violaciones. D-2: hay tests con entrada basura en entorno, entorno-secreto, cliente-servidor, cliente-secreto, sesion, tiempo-limite y acceso. D-4: el fallo anterior está cerrado, gitleaks no encuentra nada y no hay variables NEXT_PUBLIC. D-6: acceso.ts tiene acceso.test.ts al lado y no hay más archivos nuevos en src/nucleo ni src/aplicacion (el test [D-6] no existe todavía). D-7: la función más larga del diff mide 48 líneas de 50 y el archivo más largo, 243 de 300. D-8: sin atajos en lo añadido. D-12: textos en español y sin emojis. D-14: hay dos catch en el código nuevo (proxy.ts:14 y sesion.ts:36), ninguno vacío, y los dos relanzan lo que no es suyo. D-15: este archivo. D-3, D-5, D-9, D-10, D-11 y D-13 no se ven afectadas: no hay SQL, dinero, CSS ni pantallas, así que no se corrió gate:e2e (tests/e2e no existe hasta el paso 15).\nnpm run spec:check se corrió solo para informar: 6 verificadas (D-2, D-4, D-7, D-8, D-14, D-15), 0 en rojo, 8 sin test (D-1, D-3, D-5, D-6, D-9, D-10, D-11, D-12) y 1 manual (D-13). Sale con 1 y no cuenta como comando de la ronda: los tests que faltan los crean otros pasos del plan.\nSin comprobar: la consulta contra un PostgREST y unas políticas RLS reales (que talleres(nombre) llegue como objeto y no como lista, que maybeSingle encaje con las políticas); solo hay un PostgREST falso y la base real llega en el paso 9. El inicio de sesión real. Que los mensajes de leerSesion lleguen al usuario en producción: Next oculta el texto de los errores de servidor y se verá con las pantallas del paso 12. El proxy detrás de Vercel: solo se probó next start en local. El Auth real de Supabase: el falso solo imita /user y /token."
+}

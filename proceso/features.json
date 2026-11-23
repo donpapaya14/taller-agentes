@@ -3,7 +3,7 @@
     "id": "f01-sistema-visual",
     "titulo": "Sistema visual y tablero",
     "resumen": "Los tokens de color, tipografía y espaciado de FOSO y un tablero de muestra hecho con ellos.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f02-proceso",
@@ -33,7 +33,7 @@
     "id": "f06-acceso",
     "titulo": "Acceso y seguridad",
     "resumen": "La lógica de acceso por rol, los clientes de Supabase del servidor y las cabeceras de seguridad.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f07-ordenes-recambios",
