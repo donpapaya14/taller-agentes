@@ -11,7 +11,8 @@ import { IconoAvanzar } from '@/ui/iconos';
 export const dynamic = 'force-dynamic';
 
 // Sin las variables de Supabase no se sabe quién entra, pero la portada es pública y el proxy ya la
-// deja pasar en ese caso: se sirve igual, como a cualquier visitante. Cualquier otro fallo se ve.
+// deja pasar en ese caso: se sirve igual, como a cualquier visitante. Cualquier otro fallo se ve: lo
+// recoge src/app/error.tsx.
 async function hayUsuario(): Promise<boolean> {
   try {
     return (await leerSesion()) !== null;
