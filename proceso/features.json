@@ -21,7 +21,7 @@
     "id": "f04-base-datos",
     "titulo": "Base de datos y aislamiento",
     "resumen": "El esquema de Postgres con RLS por taller en todas las tablas y un arnés para probar el aislamiento.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f05-funciones",
