@@ -59,9 +59,11 @@ begin
    where id = v_taller
   returning siguiente_factura - 1 into v_numero;
 
+  -- El año es el de Madrid, no el de la zona de la sesión (UTC en Supabase): a las 00:30 del 1 de
+  -- enero la factura ya es del año nuevo.
   -- lpad recorta por la derecha lo que no cabe: sin el case, el 10000 y el 10001 saldrían los dos
   -- como F-AAAA-1000 y repetirían número. De 10000 en adelante el número va entero.
-  v_factura := 'F-' || to_char(now(), 'YYYY') || '-'
+  v_factura := 'F-' || to_char(now() at time zone 'Europe/Madrid', 'YYYY') || '-'
     || case when v_numero < 10000 then lpad(v_numero::text, 4, '0') else v_numero::text end;
 
   update public.ordenes

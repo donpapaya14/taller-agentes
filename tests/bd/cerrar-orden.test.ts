@@ -8,7 +8,7 @@ const LEER_ORDEN = `select estado, numero_factura, entregada_en is not null as c
 const STOCK = 'select stock from public.recambios where id = $1';
 const STOCK_DEL_TALLER = 'select sum(stock)::int from public.recambios where taller_id = $1';
 const SIGUIENTE_FACTURA = 'select siguiente_factura from public.talleres where id = $1';
-const ANIO = `select to_char(now(), 'YYYY')`;
+const ANIO = `select to_char(now() at time zone 'Europe/Madrid', 'YYYY')`;
 const SIN_ENTREGAR = { estado: 'listo', numero_factura: null, con_fecha: false };
 const ORDEN_QUE_NO_EXISTE = '00000000-0000-4000-8000-000000000999';
 
