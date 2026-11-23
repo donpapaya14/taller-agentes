@@ -54,6 +54,18 @@ describe('opcionesDeCliente', () => {
       signal: expect.any(AbortSignal),
     });
   });
+
+  it('[D-14] las llamadas a Supabase se cortan al vencer el plazo de la operación', async () => {
+    const buscar = vi.fn().mockResolvedValue(new Response('ok'));
+    vi.stubGlobal('fetch', buscar);
+    const plazo = new AbortController();
+
+    await opcionesDeCliente(plazo.signal).global.fetch('https://proyecto.example/auth/v1/user');
+    const { signal } = buscar.mock.calls[0][1];
+    plazo.abort();
+
+    expect(signal.aborted).toBe(true);
+  });
 });
 
 // Los dos clientes de servidor: el de las páginas y el que refresca la sesión en el proxy.

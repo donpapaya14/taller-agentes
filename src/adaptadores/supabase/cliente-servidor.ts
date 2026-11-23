@@ -7,11 +7,12 @@ import { opcionesDeCliente } from './opciones-cliente';
 // Un cliente por petición, con la sesión de quien llama: es RLS quien decide qué ve y qué cambia.
 // Escribir cookies no se envuelve en un try: solo escribe una renovación de sesión y esa la hace el
 // proxy antes de renderizar. Si una página de servidor llegara a escribir, el error debe verse.
-export async function crearClienteServidor(): Promise<SupabaseClient> {
+// Con un `plazo`, ninguna llamada del cliente sigue una vez vencido: es el de la operación entera.
+export async function crearClienteServidor(plazo?: AbortSignal): Promise<SupabaseClient> {
   const { url, clavePublicable } = leerEntorno();
   const almacen = await cookies();
   return createServerClient(url, clavePublicable, {
-    ...opcionesDeCliente(),
+    ...opcionesDeCliente(plazo),
     cookies: {
       getAll: () => almacen.getAll(),
       setAll: (aEscribir) => {

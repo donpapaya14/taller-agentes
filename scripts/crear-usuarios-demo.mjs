@@ -40,7 +40,11 @@ async function asegurarUsuario(cliente, email, password) {
   return `Contraseña puesta de nuevo: ${email}`;
 }
 
-async function main(entorno) {
+async function main(entornoCrudo) {
+  // Igual que leerEntornoSecreto: los espacios de los bordes se recortan y una contraseña solo con
+  // espacios cuenta como ausente. Si no, los usuarios se crearían con una contraseña distinta de la
+  // que la app manda al entrar, y nadie podría iniciar sesión.
+  const entorno = { ...entornoCrudo, DEMO_PASSWORD: entornoCrudo.DEMO_PASSWORD?.trim() };
   const faltan = VARIABLES.filter((nombre) => !entorno[nombre]);
   if (faltan.length > 0) {
     const avisos = faltan.map((nombre) => `Falta la variable de entorno ${nombre}`);
