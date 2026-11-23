@@ -62,3 +62,4 @@ Después haces commit solo de ese archivo: `test(<feature>): ronda <N>, <K> fall
 - Reescribir una ronda ya escrita: cada ronda es un archivo nuevo.
 - Inventar fallos. Si no encuentras ninguno, la ronda dice `PASA` y así se publica.
 - Dar `PASA` con un comando en rojo.
+- Escribir en la ronda, tal cual, los comentarios que apagan eslint, TypeScript, la cobertura o la mutación. Si citas el patrón de un grep, rómpelo con corchetes (`eslint[-]disable`, `@ts[-]ignore`): el detector de manipulación lee también `proceso/`.
