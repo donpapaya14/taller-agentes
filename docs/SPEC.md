@@ -429,7 +429,7 @@ Testing corre siempre en `sonnet`. Oleada 2: cinco ramas a la vez (3, 4, 5, 6→
     | D-5 | El dinero se guarda y se calcula en céntimos enteros | tests de propiedades `[D-5]` |
     | D-6 | Cada archivo de `src/nucleo` y `src/aplicacion` tiene su archivo de test al lado | test `[D-6]` |
     | D-7 | Límites: 300 líneas por archivo, 50 por función, complejidad 10, 4 parámetros | test `[D-7]` que lee la configuración de eslint |
-    | D-8 | Sin atajos: nada de `skip`, `only`, `eslint-disable`, `@ts-ignore`, `any` ni HTML inyectado sin escapar | test `[D-8]` que recorre `src` y `tests` |
+    | D-8 | Sin atajos: nada de `skip`, `only`, comentarios que apagan eslint o TypeScript, `any` ni HTML inyectado sin escapar | test `[D-8]` que recorre `src` y `tests` |
     | D-9 | Colores, tipografías y espaciados salen de `src/ui/tokens.css`; ningún valor suelto | test `[D-9]` |
     | D-10 | Cada par de texto y fondo cumple contraste AA | test `[D-10]` que calcula el contraste de los pares declarados |
     | D-11 | Cada pantalla tiene estado de carga, de error y vacío | test `[D-11]` |
@@ -801,7 +801,7 @@ Se hace en la misma rama y copia de trabajo que el paso 6, cuando su ronda pase.
   | `[C-18][D-4] no hay variables NEXT_PUBLIC` | `src`, `.env.example`, `next.config.ts` | 0 coincidencias de `NEXT_PUBLIC_` |
   | `[C-18] las cabeceras de seguridad están declaradas` | `CABECERAS` | las cuatro; la CSP contiene `frame-ancestors 'none'` y ningún `*` |
   | `[D-7] eslint tiene los límites como error` | `new ESLint().calculateConfigForFile('src/aplicacion/acceso.ts')` | `max-lines`, `max-lines-per-function`, `complexity`, `max-params` en nivel 2 con 300, 50, 10 y 4 |
-  | `[D-8] sin atajos en src ni tests` | recorre `src` y `tests` buscando `.skip(`, `.only(`, `eslint-disable`, `@ts-ignore`, `: any` y la propiedad de React que inyecta HTML (patrones montados por concatenación para que el test no se encuentre a sí mismo) | 0 coincidencias |
+  | `[D-8] sin atajos en src ni tests` | recorre `src` y `tests` buscando `.skip(`, `.only(`, comentarios que apagan eslint o TypeScript, `: any` y la propiedad de React que inyecta HTML (patrones montados por concatenación para que el test no se encuentre a sí mismo) | 0 coincidencias |
   | `[D-14] eslint prohíbe catch vacío, console y HTML sin escapar` | configuración calculada | `no-empty`, `no-console` y `react/no-danger` en nivel 2 |
 - **Cambio:** tests → entorno → `acceso` → clientes y sesión → proxy y cabeceras → script → ronda de Testing.
 - **No hacer:** cliente de Supabase para el navegador; páginas (paso 12); crear el proyecto en la nube (paso 9); usar el cliente secreto fuera de restablecer la demo y del script.
@@ -1196,6 +1196,8 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 `spec:check` cruza tanto `docs/SPEC.md` como `DIRECTRICES.md`: cada directriz de Testing queda atada a un test sin escribir otra herramienta.
 - 2026-11-23 La construcción se hace con los agentes del repo (`develop`, `testing`) para que las rondas sean auténticas; los agentes de la casa solo montan el esqueleto, escriben los `.md`, crean la infraestructura y hacen la revisión final.
 - 2026-11-23 OK de Vladys a SPEC + plan («ok», tras ver el resumen y las 3 preguntas con recomendación «sí»): commits con usuario `donpapaya14` y nombre real; repo privado durante la construcción y público al final; GATE 3 en dos tiempos.
+- 2026-11-23 Los tipos de agente `develop` y `testing` no estaban cargados en la sesión que construye (se abrió fuera del repo): se lanzan como `ejecutor-sonnet` con la primera línea «Lee `.claude/agents/develop.md` (o `testing.md`) y trabaja exactamente como dice», como prevé «Cómo encaja con el flujo de la casa».
+- 2026-11-23 Pendientes del paso 1 para pasos posteriores: (a) quien cambie `src/app/page.tsx` sustituye el test provisional de `tests/proceso/enunciado.test.ts`; (b) `AGENTS.md` que reescribe `next dev` va a `.gitignore` (paso 16); (c) el job `desplegar` de `gate.yml` necesita `npx playwright install --with-deps chromium` antes del smoke (paso 16); (d) `trinquete --actualizar` siempre después de `git add`; (e) valorar eslint 10 y `vitest.config.mts` en el paso 16.
 - 2026-11-23 Concepto visual FOSO, sin librería de componentes y con la paleta por defecto de Tailwind apagada (descartado: shadcn/ui).
 
 ## Umbrales
