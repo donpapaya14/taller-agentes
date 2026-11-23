@@ -11,7 +11,7 @@ Lo que Testing comprueba en cada ronda. Un fallo cita una de estas directrices y
 | D-5  | El dinero se guarda y se calcula en céntimos enteros                                                                           | tests de propiedades `[D-5]`                                      |
 | D-6  | Cada archivo de `src/nucleo` y `src/aplicacion` tiene su archivo de test al lado                                               | test `[D-6]`                                                      |
 | D-7  | Límites: 300 líneas por archivo, 50 por función, complejidad 10, 4 parámetros                                                  | test `[D-7]` que lee la configuración de eslint                   |
-| D-8  | Sin atajos: nada de `skip`, `only`, `eslint-disable`, `@ts-ignore`, `any` ni HTML inyectado sin escapar                        | test `[D-8]` que recorre `src` y `tests`                          |
+| D-8  | Sin atajos: nada de `skip`, `only`, comentarios que apagan eslint o TypeScript, `any` ni HTML inyectado sin escapar            | test `[D-8]` que recorre `src` y `tests`                          |
 | D-9  | Colores, tipografías y espaciados salen de `src/ui/tokens.css`; ningún valor suelto                                            | test `[D-9]`                                                      |
 | D-10 | Cada par de texto y fondo cumple contraste AA                                                                                  | test `[D-10]` que calcula el contraste de los pares declarados    |
 | D-11 | Cada pantalla tiene estado de carga, de error y vacío                                                                          | test `[D-11]`                                                     |
