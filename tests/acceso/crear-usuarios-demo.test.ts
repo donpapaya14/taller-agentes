@@ -17,7 +17,8 @@ const contestar: Contestar = (peticion, respuesta) => {
   if (peticion.ruta === '/auth/v1/admin/users') {
     responderJson(respuesta, 200, { id: 'usuario-de-prueba' });
   } else if (peticion.ruta === '/rest/v1/rpc/restablecer_demo') {
-    respuesta.writeHead(204).end();
+    // Lo que devuelve la función real: el script da por fallo cualquier otro valor.
+    responderJson(respuesta, 200, 'RESTABLECIDO');
   } else {
     responderJson(respuesta, 404, { message: 'ruta desconocida' });
   }
