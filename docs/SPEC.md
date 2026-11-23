@@ -83,7 +83,7 @@ Entregar una app pública de gestión para talleres mecánicos (órdenes en tabl
 | P-1 | Puertas instaladas y `check:full` en verde | unit `tests/proceso/puertas.test.ts` con `[P-1]` + `npm run check:full` |
 | P-2 | Los tres agentes viven en el repo: `CLAUDE.md` (orquestador, nombra a `develop` y `testing` y describe cómo reparte), `.claude/agents/develop.md` (cómo se programa, remite a `DIRECTRICES.md`), `.claude/agents/testing.md` + `DIRECTRICES.md`. No dependen de nada de fuera del repo | unit `tests/proceso/agentes.test.ts` con `[P-2]` |
 | P-3 | Cada directriz `D-n` de `DIRECTRICES.md` tiene al menos un test con su ID en verde | `npm run spec:check` sobre `DIRECTRICES.md` + unit `tests/proceso/directrices.test.ts` con `[P-3]` |
-| P-4 | Toda feature marcada `hecha` en `proceso/features.json` tiene rondas numeradas desde 1 sin huecos y la última con veredicto `PASA`; toda ronda `FALLA` lleva al menos un fallo con evidencia | unit `tests/proceso/rondas.test.ts` con `[P-4]` |
+| P-4 | Toda feature marcada `hecha` en `proceso/features.json` tiene rondas numeradas desde 1 sin huecos y la última con veredicto `PASA`; toda ronda `FALLA` lleva al menos un fallo con evidencia o un comando en rojo con su resumen | unit `tests/proceso/rondas.test.ts` con `[P-4]` |
 | P-5 | El historial no contiene secretos ni nombres de clientes o de otros proyectos | manual: `gitleaks git` sin hallazgos (también puerta `secretos` del gate) y búsqueda de términos con la lista que guarda Vladys fuera del repo, antes de hacerlo público |
 | P-6 | El `README.md` se lee en tres minutos y contiene: enlace de la app, usuarios de prueba (jefe y mecánico) con su contraseña, cómo trabajan los tres agentes, dónde están las rondas, cómo arrancar en local y la sección «Las cuatro preguntas» | unit `tests/proceso/readme.test.ts` con `[P-6]` |
 | P-7 | La dirección de producción responde sin pedir cuenta de Vercel, el jefe y el mecánico de demostración entran con la contraseña publicada, el mecánico no ve «Entregar» y el jefe del otro taller no ve las matrículas del primero | manual: `npm run smoke` contra producción (`tests/e2e/smoke.spec.ts`, tests `[P-7]`) |
@@ -103,7 +103,7 @@ Cada requisito literal de la prueba, con el criterio que lo cubre y cómo se com
 | Orquestador con `CLAUDE.md` que reparte el trabajo | P-2 | automática: test `[P-2]` (existe, nombra a los dos subagentes y contiene el protocolo de ronda) |
 | Subagente Develop con su propio `.md` de cómo programar | P-2 | automática: test `[P-2]` (frontmatter de agente válido y secciones de cómo se programa) |
 | Subagente Testing con `.md` de DIRECTRICES que Develop debe cumplir | P-2, P-3 | automática: test `[P-2]` (`develop.md` remite a `DIRECTRICES.md`) y `spec:check` (cada directriz con test en verde) |
-| Testing revisa y devuelve los fallos hasta que todo pasa | P-4, P-8, C-12 | automática: test `[P-4]` (rondas sin huecos, última `PASA`, fallos con evidencia); a mano: `entrega-check` (todas las features hechas); visible en `/proceso` y en los commits `test(...)`/`fix(...)` |
+| Testing revisa y devuelve los fallos hasta que todo pasa | P-4, P-8, C-12 | automática: test `[P-4]` (rondas sin huecos, última `PASA`, fallos con evidencia o comando en rojo); a mano: `entrega-check` (todas las features hechas); visible en `/proceso` y en los commits `test(...)`/`fix(...)` |
 | Base de datos gratuita: Supabase | P-10, C-2 | a mano: plan Free confirmado antes de crear el proyecto (paso 9) y en el checklist |
 | Publicada gratis en Vercel | P-10, P-7 | a mano: checklist (cuenta Hobby, proyecto en la cuenta personal) |
 | Dirección de producción pública, sin protección de Vercel | P-7 | a mano contra producción: smoke y petición sin sesión que no redirige a `vercel.com` ni devuelve 401 |
@@ -345,6 +345,7 @@ Lo de la sección «Fuera de alcance». Ningún paso instala nada fuera del repo
 | 6 | Base de datos: esquema, RLS y arnés de pruebas | 2 | 1, 2 | 3, 4, 5, 8 | develop + testing | opus — PGlite con roles y RLS tiene comportamiento sin comprobar y aquí se decide la seguridad entre talleres |
 | 7 | Funciones SQL: entregar orden, numeración y demo | 2 (tras el 6) | 6 | 3, 4, 5, 8 | develop + testing | sonnet |
 | 8 | Acceso: lógica, clientes de Supabase y cabeceras (sin pantallas) | 2 | 1, 2 | 3, 4, 5, 6 | develop + testing | sonnet |
+| 8b | Ronda extra de acceso: sin Cache Components, límite de tiempo, matcher, CSP de desarrollo | 2 (tras el 8) | 8 | 3, 4, 5, 6, 7 | develop + testing | sonnet |
 | 9 | Proyecto de Supabase en la nube | 3 | 7, 8 | 10, 11 | ejecutor-sonnet | sonnet |
 | 10 | Órdenes y recambios: casos de uso y repositorios (sin pantallas) | 3 | 5, 8 | 9, 11, 12 | develop + testing | sonnet |
 | 11 | PDF, restablecer demo y cron (sin pantallas) | 3 | 5, 7, 8 | 9, 10, 12 | develop + testing | sonnet |
@@ -429,7 +430,7 @@ Testing corre siempre en `sonnet`. Oleada 2: cinco ramas a la vez (3, 4, 5, 6→
     | D-5 | El dinero se guarda y se calcula en céntimos enteros | tests de propiedades `[D-5]` |
     | D-6 | Cada archivo de `src/nucleo` y `src/aplicacion` tiene su archivo de test al lado | test `[D-6]` |
     | D-7 | Límites: 300 líneas por archivo, 50 por función, complejidad 10, 4 parámetros | test `[D-7]` que lee la configuración de eslint |
-    | D-8 | Sin atajos: nada de `skip`, `only`, `eslint-disable`, `@ts-ignore`, `any` ni HTML inyectado sin escapar | test `[D-8]` que recorre `src` y `tests` |
+    | D-8 | Sin atajos: nada de `skip`, `only`, comentarios que apagan eslint o TypeScript, `any` ni HTML inyectado sin escapar | test `[D-8]` que recorre `src` y `tests` |
     | D-9 | Colores, tipografías y espaciados salen de `src/ui/tokens.css`; ningún valor suelto | test `[D-9]` |
     | D-10 | Cada par de texto y fondo cumple contraste AA | test `[D-10]` que calcula el contraste de los pares declarados |
     | D-11 | Cada pantalla tiene estado de carga, de error y vacío | test `[D-11]` |
@@ -580,7 +581,7 @@ Testing corre siempre en `sonnet`. Oleada 2: cinco ramas a la vez (3, 4, 5, 6→
   export function calcularTotales(lineas: Linea[], manoObraMinutos: number, precioHoraCentimos: number): Totales;
   //  manoObra = Math.round(minutos * precioHora / 60); iva = Math.round(base * 21 / 100)
   //  RangeError('Importe no válido') si algún número no es entero, es negativo, o una cantidad es 0
-  export function formatearEuros(centimos: number): string;  // 123456 → '1.234,56 €' (punto de millar, espacio normal antes de €); -50 → '-0,50 €'
+  export function formatearEuros(centimos: number): string;  // 123456 → '1.234,56 €' (punto de millar, espacio normal antes de €); -50 → '-0,50 €'; RangeError('Importe no válido') si no es un entero finito (12.5, NaN, Infinity)
   export function eurosACentimos(texto: string): number | null;  // '12,50' → 1250; '12.5' → 1250; '0,1' → 10; '12,505' → null; 'abc' → null; '-1' → null
 
   // stock.ts
@@ -801,12 +802,48 @@ Se hace en la misma rama y copia de trabajo que el paso 6, cuando su ronda pase.
   | `[C-18][D-4] no hay variables NEXT_PUBLIC` | `src`, `.env.example`, `next.config.ts` | 0 coincidencias de `NEXT_PUBLIC_` |
   | `[C-18] las cabeceras de seguridad están declaradas` | `CABECERAS` | las cuatro; la CSP contiene `frame-ancestors 'none'` y ningún `*` |
   | `[D-7] eslint tiene los límites como error` | `new ESLint().calculateConfigForFile('src/aplicacion/acceso.ts')` | `max-lines`, `max-lines-per-function`, `complexity`, `max-params` en nivel 2 con 300, 50, 10 y 4 |
-  | `[D-8] sin atajos en src ni tests` | recorre `src` y `tests` buscando `.skip(`, `.only(`, `eslint-disable`, `@ts-ignore`, `: any` y la propiedad de React que inyecta HTML (patrones montados por concatenación para que el test no se encuentre a sí mismo) | 0 coincidencias |
+  | `[D-8] sin atajos en src ni tests` | recorre `src` y `tests` buscando `.skip(`, `.only(`, comentarios que apagan eslint o TypeScript, `: any` y la propiedad de React que inyecta HTML (patrones montados por concatenación para que el test no se encuentre a sí mismo) | 0 coincidencias |
   | `[D-14] eslint prohíbe catch vacío, console y HTML sin escapar` | configuración calculada | `no-empty`, `no-console` y `react/no-danger` en nivel 2 |
 - **Cambio:** tests → entorno → `acceso` → clientes y sesión → proxy y cabeceras → script → ronda de Testing.
 - **No hacer:** cliente de Supabase para el navegador; páginas (paso 12); crear el proyecto en la nube (paso 9); usar el cliente secreto fuera de restablecer la demo y del script.
 - **Verificación:** `npm run check:full` → 0; `npm run build` → compila con el proxy.
 - **Para y devuelve ABIERTO si:** Next 16.4.6 no reconoce `src/proxy.ts`; `@supabase/ssr` 0.12.7 cambia la forma de pasar cookies respecto a `getAll`/`setAll`.
+
+#### Paso 8b: Ronda extra de acceso tras la oleada 2 (feature `f06-acceso`)
+
+Cambio de contrato decidido por el arquitecto, no hallazgo de Testing: Develop lo implementa en la rama `paso-8` (commit `fix(f06-acceso): <qué> [cambio de contrato]`) y Testing lo revisa en la ronda siguiente, que registra solo lo que Testing encuentre.
+
+- **Cierra:** C-1, C-18 (refuerzo); D-14
+- **Archivos:** `next.config.ts`, `src/cabeceras.ts`, `src/proxy.ts`, `src/adaptadores/supabase/sesion.ts`, `src/adaptadores/supabase/cliente-servidor.ts` — modificar; `src/adaptadores/supabase/tiempo-limite.ts`, `src/adaptadores/supabase/tiempo-limite.test.ts` — crear; `tests/seguridad/cabeceras.test.ts`, `tests/seguridad/claves.test.ts` — modificar (añadir casos).
+- **Contexto que necesitas:**
+  - `next.config.ts` trae de `create-next-app` las líneas `cacheComponents: true` y `partialPrefetching: true`. Con Cache Components activo no vale `export const dynamic = 'force-static'` (paso 12) y es la pieza del aviso de seguridad de noviembre.
+  - `src/adaptadores/supabase/sesion.ts` exporta `refrescarSesion(peticion)` (lo usa `src/proxy.ts`): se mantiene, es la forma correcta de respetar la regla `supabase-solo-en-su-adaptador`.
+  - Con Supabase caído, `supabase-js` reintenta unos 25 s antes de fallar.
+  - El `matcher` de `src/proxy.ts` excluye toda ruta con un punto.
+- **Contrato exacto:**
+  ```ts
+  // src/adaptadores/supabase/tiempo-limite.ts
+  export const LIMITE_MS = 4000;
+  export function conTiempoLimite(buscar: typeof fetch, ms?: number): typeof fetch;   // añade AbortSignal.timeout(ms) respetando la señal que ya venga (AbortSignal.any)
+  // src/cabeceras.ts
+  export function crearCabeceras(esDesarrollo: boolean): { key: string; value: string }[];   // en desarrollo, script-src añade 'unsafe-eval'; en producción, nunca
+  export const CABECERAS = crearCabeceras(false);
+  ```
+  - `next.config.ts`: quitar `cacheComponents` y `partialPrefetching`; `headers()` usa `crearCabeceras(process.env.NODE_ENV !== 'production')`.
+  - `crearClienteServidor()` y el cliente que crea `refrescarSesion` pasan `global: { fetch: conTiempoLimite(fetch) }`. `refrescarSesion` y `leerSesion` capturan el error de tiempo agotado o de red y devuelven «sin sesión» (el error no se traga: se relanza todo lo que no sea de red o de tiempo).
+  - `matcher` de `src/proxy.ts`: `['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|txt|xml|woff2)$).*)']` (excluye solo extensiones de archivo estático, no cualquier punto).
+- **Tests primero:**
+  | Test | Entrada | Resultado esperado |
+  |---|---|---|
+  | `[D-14] una petición que no responde se corta al llegar al límite` | `conTiempoLimite(fetchQueNuncaResuelve, 50)` | rechaza con un error de nombre `TimeoutError` o `AbortError` en menos de 500 ms |
+  | `[D-14] una petición que responde a tiempo pasa intacta` | fetch falso que resuelve con 200 | misma respuesta |
+  | `[C-18] en producción la CSP no permite eval` | `crearCabeceras(false)` | la CSP no contiene `unsafe-eval` |
+  | `[C-18] en desarrollo la CSP permite eval para que arranque next dev` | `crearCabeceras(true)` | `script-src` contiene `'unsafe-eval'` |
+  | `[C-18] next.config no activa Cache Components` | texto de `next.config.ts` | no contiene `cacheComponents` ni `partialPrefetching` |
+  | `[C-1] una ruta privada con punto pasa por el proxy` | expresión del `matcher` contra `/ordenes/a.b` y contra `/logo.svg` | casa la primera, no la segunda |
+- **No hacer:** quitar el bloque `turbopack` de `next.config.ts`; bajar el límite por debajo de 4000 ms; capturar errores que no sean de red o de tiempo.
+- **Verificación:** `npm run check:full` → 0; `npm run build` → compila.
+- **Para y devuelve ABIERTO si:** al quitar `partialPrefetching` el build avisa de otra opción dependiente; `AbortSignal.any` no existe en el runtime del proxy.
 
 #### Paso 9: Proyecto de Supabase en la nube
 
@@ -977,7 +1014,7 @@ Requiere el OK de Vladys al gate de diseño.
   ```
   - `/login`: titular «FOSO»; campos «Correo» y «Contraseña»; botón «Entrar»; debajo, «Entrar como jefe» y «Entrar como mecánico».
   - `/`: con sesión redirige a `/tablero`; sin sesión, el nombre, la frase «Gestión de taller: órdenes, recambios y facturas. La construyeron tres agentes.» y dos enlaces: «Entrar» y «Cómo se construyó».
-  - `(taller)/layout.tsx`: sin sesión redirige a `/login`. `Navegacion`: enlaces «Tablero» y «Recambios», nombre del taller, nombre y rol («Jefe de taller» / «Mecánico»), «Salir». En móvil, barra inferior fija con icono y texto. `loading.tsx`: «Cargando el taller…». `error.tsx`: «Algo ha fallado al cargar esta pantalla» y botón «Reintentar».
+  - `(taller)/layout.tsx`: llama a `leerSesion()` y sin sesión redirige a `/login` (no se fía del proxy). `Navegacion`: enlaces «Tablero» y «Recambios», nombre del taller, nombre y rol («Jefe de taller» / «Mecánico»), «Salir». En móvil, barra inferior fija con icono y texto. `loading.tsx`: «Cargando el taller…». `error.tsx`: «Algo ha fallado al cargar esta pantalla» y botón «Reintentar».
   - `/proceso`: `export const dynamic = 'force-static'`; `leerProceso(path.join(process.cwd(), 'proceso'))`; `urlRepo = 'https://github.com/donpapaya14/taller-agentes'`. Titular «Cómo se construyó». Entrada de dos frases: quién reparte, quién programa, quién revisa, y que lo de abajo son los informes reales de cada revisión. `TresAgentes`: tres bloques (Orquestador, Develop, Testing), una frase cada uno y enlace a su archivo (`${urlRepo}/blob/main/CLAUDE.md`, `…/.claude/agents/develop.md`, `…/.claude/agents/testing.md`, y `…/DIRECTRICES.md`). Una línea con las cifras de `resumir` («12 features · 19 rondas · 23 fallos corregidos», con los números reales). Después, una `LineaDeRondas` por feature.
   - `LineaDeRondas`: título y resumen de la feature; una pieza por ronda: `FALLA` en `--averia` con «N fallos» («1 fallo» en singular), `PASA` en `--testigo` con «Pasa». Cada pieza es un `<details>` nativo: dentro, por cada fallo, la directriz, la descripción, el archivo y la evidencia en `--fuente-dato`; el commit enlaza a `${urlRepo}/commit/<hash>`. Sin rondas: «Todavía sin revisar».
 - **Tests primero:**
@@ -1028,6 +1065,7 @@ Requiere el OK de Vladys al gate de diseño.
   | `[C-15][D-11] una orden sin líneas muestra su estado vacío` | `lineas: []` | «Sin recambios todavía» |
   | `[C-3] el mecánico no ve precios en las líneas` | `verImportes: false` | no aparece ningún «€» |
 - **Cambio:** tests → componentes → tablero → nueva orden → ficha y acciones → ruta del PDF → borrar `/muestra` → ronda de Testing.
+- **Obligatorio en cada página, acción y ruta de este paso:** empezar por `leerSesion()` y, si devuelve `null`, `redirect('/login')` (en acciones y en la ruta del PDF, antes de tocar datos). El proxy es comodidad, no la barrera.
 - **No hacer:** tocar `src/app/(taller)/recambios` ni `src/ui/recambios` (otra rama); páginas de clientes o vehículos; componentes de cliente salvo el formulario de nueva orden y el selector de columna.
 - **Verificación:** `npm run check:full` → 0; con `npm run dev` (sesión principal): como mecánico, crear una orden con vehículo nuevo y pasarla a «En reparación»; como jefe, añadir dos líneas a una orden en «Listo», abrir el PDF (Presupuesto), entregar, ver el número de factura y abrir el PDF (Factura). Al acabar, `node --env-file=.env.local scripts/crear-usuarios-demo.mjs` no restablece si han pasado menos de 10 minutos: anotar la hora.
 - **Para y devuelve ABIERTO si:** la política de `ordenes` rechaza el cambio de estado del mecánico; `supabase.rpc('cerrar_orden')` no devuelve el texto de la excepción; `pdf-lib` falla en la ruta.
@@ -1056,6 +1094,7 @@ Requiere el OK de Vladys al gate de diseño.
   | `[C-3] el mecánico no ve precios` | `precio: null` en todos | no aparece ningún «€» |
   | `[C-15][D-11] lista vacía muestra su texto` | `recambios: []` | «El almacén está vacío» |
 - **Cambio:** tests → lista → formulario → página y acciones → ronda de Testing.
+- **Obligatorio en la página y en cada acción de este paso:** empezar por `leerSesion()` y, si devuelve `null`, `redirect('/login')`.
 - **No hacer:** historial de movimientos de stock; tocar `tablero` u `ordenes` (otra rama); borrar recambios.
 - **Verificación:** `npm run check:full` → 0; con `npm run dev` (sesión principal): como jefe, cambiar el stock de un recambio por debajo de su mínimo y verlo subir arriba con la etiqueta; como mecánico, sin formularios.
 - **Para y devuelve ABIERTO si:** la política de `recambios` rechaza la escritura del jefe.
@@ -1159,6 +1198,7 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 | 6 | C-2, C-3, C-4 (base de datos), D-3 |
 | 7 | C-5, C-8 (numeración), C-13 (función) |
 | 8 | C-1, C-18, D-2, D-4, D-7, D-8, D-14 |
+| 8b | C-1, C-18, D-14 (refuerzo) |
 | 9 | P-10 (plan Free) |
 | 10 | C-11, C-4, C-5, C-3 (casos de uso), D-2 |
 | 11 | C-8 (PDF), C-13 (ruta) |
@@ -1184,6 +1224,14 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 GATE 1 y GATE 2 fusionados en un solo OK de Vladys a SPEC y plan («vale, un solo OK a spec y plan»). El gate de diseño del tablero y el GATE 3 se mantienen.
 - 2026-11-23 Plan por oleadas en paralelo, cada paso en su copia de trabajo de git (Vladys: «si hace falta abrir varios agentes abrelos»). El paso 1 instala todas las dependencias y scripts para que las ramas no choquen en `package.json`.
 - 2026-11-23 GATE 3 en dos tiempos: publicar, y con producción arriba, checklist contra el enunciado antes de enviar la candidatura (el checklist necesita la URL de producción, que no existe antes de publicar).
+- 2026-11-23 (oleada 2) Se quitan `cacheComponents` y `partialPrefetching` que trajo `create-next-app`: es la pieza del aviso de seguridad y es incompatible con `force-static` de `/proceso`. Lo aplica el paso 8b.
+- 2026-11-23 (oleada 2) Validado `refrescarSesion(peticion)` en `src/adaptadores/supabase/sesion.ts` con el proxy llamándola: la regla de arquitectura manda sobre el bloque del paso 8.
+- 2026-11-23 (oleada 2) Las llamadas a Supabase llevan un límite de 4 s; pasado ese tiempo el proxy trata la petición como sin sesión (antes, 25 s por petición con Supabase caído). Paso 8b.
+- 2026-11-23 (oleada 2) El proxy no es la barrera de acceso: su `matcher` pasa a excluir solo extensiones de archivo estático (paso 8b) y cada página, acción y ruta privada llama a `leerSesion()` (pasos 12, 13 y 14).
+- 2026-11-23 (oleada 2) CSP con `'unsafe-eval'` solo en desarrollo, para que arranque `next dev`; en producción nunca, y hay test. Paso 8b.
+- 2026-11-23 (oleada 2) P-4 se alinea con el contrato del paso 4, `testing.md` y D-15: una ronda `FALLA` vale con un fallo con evidencia o con un comando en rojo (el comando en rojo ya es la evidencia).
+- 2026-11-23 (oleada 2) `formatearEuros` lanza `RangeError('Importe no válido')` si no recibe un entero finito, igual que `calcularTotales`. Si la ronda 1 de Testing no lo señala, entra como cambio de contrato de `f03-nucleo` y Testing lo revisa en la ronda siguiente; no se anota como hallazgo de Testing.
+- 2026-11-23 (oleada 2) La línea base del trinquete se baja en `main` tras integrar cada oleada con `check:full` en verde (`node scripts/puertas/trinquete.mjs --actualizar`, commit `chore(calidad): baja la línea base del trinquete`). Solo baja; nunca dentro de una rama de feature.
 - 2026-11-23 App nueva desde cero, sin código de otros proyectos.
 - 2026-11-23 Todo el acceso a datos en el servidor, sin cliente de Supabase en el navegador (ninguna clave en el cliente; descartado: consultas desde componentes de cliente).
 - 2026-11-23 El aislamiento y los roles se deciden en Postgres (RLS + `cerrar_orden`), no en el servidor de Next (descartado: filtrar por `taller_id` con la clave secreta).
@@ -1196,6 +1244,8 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 `spec:check` cruza tanto `docs/SPEC.md` como `DIRECTRICES.md`: cada directriz de Testing queda atada a un test sin escribir otra herramienta.
 - 2026-11-23 La construcción se hace con los agentes del repo (`develop`, `testing`) para que las rondas sean auténticas; los agentes de la casa solo montan el esqueleto, escriben los `.md`, crean la infraestructura y hacen la revisión final.
 - 2026-11-23 OK de Vladys a SPEC + plan («ok», tras ver el resumen y las 3 preguntas con recomendación «sí»): commits con usuario `donpapaya14` y nombre real; repo privado durante la construcción y público al final; GATE 3 en dos tiempos.
+- 2026-11-23 Los tipos de agente `develop` y `testing` no estaban cargados en la sesión que construye (se abrió fuera del repo): se lanzan como `ejecutor-sonnet` con la primera línea «Lee `.claude/agents/develop.md` (o `testing.md`) y trabaja exactamente como dice», como prevé «Cómo encaja con el flujo de la casa».
+- 2026-11-23 Pendientes del paso 1 para pasos posteriores: (a) quien cambie `src/app/page.tsx` sustituye el test provisional de `tests/proceso/enunciado.test.ts`; (b) `AGENTS.md` que reescribe `next dev` va a `.gitignore` (paso 16); (c) el job `desplegar` de `gate.yml` necesita `npx playwright install --with-deps chromium` antes del smoke (paso 16); (d) `trinquete --actualizar` siempre después de `git add`; (e) valorar eslint 10 y `vitest.config.mts` en el paso 16.
 - 2026-11-23 Concepto visual FOSO, sin librería de componentes y con la paleta por defecto de Tailwind apagada (descartado: shadcn/ui).
 
 ## Umbrales
