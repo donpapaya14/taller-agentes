@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { puede, type Accion, type Rol } from './permisos';
 
@@ -19,6 +20,11 @@ const accionesDelMecanico = (permitidas: boolean): Accion[] =>
 
 const JEFE: Rol = 'jefe';
 const MECANICO: Rol = 'mecanico';
+
+// El tipo `Rol` no deja escribir estos valores, pero en ejecución el rol llega de datos sin validar.
+const comoRol = (valor: unknown): Rol => valor as Rol;
+
+const ROLES_DESCONOCIDOS = [undefined, null, '', 'admin', 'JEFE', 'mecanico ', 0];
 
 describe('permisos por rol', () => {
   it('[C-3] el mecánico no entrega, no borra, no edita recambios ni ve importes', () => {
@@ -49,5 +55,25 @@ describe('permisos por rol', () => {
     for (const accion of ACCIONES) {
       expect(puede(JEFE, accion)).toBe(true);
     }
+  });
+});
+
+describe('permisos: roles desconocidos', () => {
+  it.each(ROLES_DESCONOCIDOS)('[C-3] el rol %j no puede ninguna acción', (rol) => {
+    for (const accion of ACCIONES) {
+      expect(puede(comoRol(rol), accion)).toBe(false);
+    }
+  });
+
+  it('[C-3] cualquier valor que no sea jefe ni mecánico no puede ninguna acción', () => {
+    fc.assert(
+      fc.property(
+        fc.anything().filter((valor) => valor !== JEFE && valor !== MECANICO),
+        fc.constantFrom(...ACCIONES),
+        (rol, accion) => {
+          expect(puede(comoRol(rol), accion)).toBe(false);
+        },
+      ),
+    );
   });
 });

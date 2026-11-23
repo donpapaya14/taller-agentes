@@ -11,8 +11,19 @@ export type ResultadoDescuento =
   | { ok: true; existencias: Existencia[] }
   | { ok: false; faltan: { referencia: string; falta: number }[] };
 
+const MENSAJE_CANTIDAD_NO_VALIDA = 'Cantidad no válida';
+
 export function bajoMinimo(existencia: Pick<Existencia, 'stock' | 'stockMinimo'>): boolean {
   return existencia.stock <= existencia.stockMinimo;
+}
+
+// Un consumo de -3 subiría el stock en vez de bajarlo: solo valen los enteros de al menos 1.
+function comprobarCantidades(consumos: Consumo[]): void {
+  const todasValidas = consumos.every(
+    ({ cantidad }) => Number.isSafeInteger(cantidad) && cantidad >= 1,
+  );
+
+  if (!todasValidas) throw new RangeError(MENSAJE_CANTIDAD_NO_VALIDA);
 }
 
 // Suma lo pedido por recambio; el Map conserva el orden en que cada uno se pidió por primera vez.
@@ -26,7 +37,9 @@ function sumarPorRecambio(consumos: Consumo[]): Map<string, number> {
 
 // Todo o nada: si algún recambio no alcanza, se devuelve lo que falta y no se descuenta nada.
 // No modifica lo que recibe: el resultado es una lista nueva.
+// Lanza RangeError si alguna cantidad no es un entero de al menos 1.
 export function descontar(existencias: Existencia[], consumos: Consumo[]): ResultadoDescuento {
+  comprobarCantidades(consumos);
   const pedido = sumarPorRecambio(consumos);
 
   const faltan = [...pedido].flatMap(([recambioId, cantidad]) => {

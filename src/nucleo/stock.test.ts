@@ -42,6 +42,38 @@ const consumosArbitrarios = fc.array(
   { maxLength: 4 },
 );
 
+const MENSAJE_CANTIDAD_NO_VALIDA = 'Cantidad no válida';
+
+const CANTIDADES_NO_VALIDAS = [
+  { caso: 'negativa', cantidad: -3 },
+  { caso: 'cero', cantidad: 0 },
+  { caso: 'con decimales', cantidad: 1.5 },
+  { caso: 'que no es un número', cantidad: Number.NaN },
+  { caso: 'infinita', cantidad: Number.POSITIVE_INFINITY },
+  { caso: 'fuera de los enteros seguros', cantidad: 2 ** 53 },
+];
+
+// El consumo malo en cualquier posición, con o sin otros buenos alrededor.
+const LISTAS_CON_UN_CONSUMO_MALO = [
+  { caso: 'detrás de uno bueno', consumos: [consumo('r-1', 1), consumo('r-1', -3)] },
+  { caso: 'delante de uno bueno', consumos: [consumo('r-1', -3), consumo('r-2', 1)] },
+  {
+    caso: 'que cancela a otro del mismo recambio',
+    consumos: [consumo('r-2', 5), consumo('r-2', -5)],
+  },
+  { caso: 'de un recambio que no existe', consumos: [consumo('r-9', -3)] },
+  {
+    caso: 'aunque a otro recambio le falte stock',
+    consumos: [consumo('r-1', 99), consumo('r-2', 0)],
+  },
+];
+
+const cantidadNoValida = fc.oneof(
+  fc.integer({ min: -50, max: 0 }),
+  fc.double({ noInteger: true }),
+  fc.constantFrom(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 2 ** 53),
+);
+
 const pedidoDe = (consumos: Consumo[], recambioId: string): number =>
   consumos
     .filter((pedido) => pedido.recambioId === recambioId)
@@ -153,6 +185,44 @@ describe('stock: descontar con ejemplos', () => {
     descontar(existencias, [consumo('r-1', 9)]);
 
     expect(existencias).toEqual([FILTRO, PASTILLAS]);
+  });
+});
+
+describe('stock: cantidades no válidas', () => {
+  const descontarConsumos = (consumos: Consumo[]) => () => descontar([FILTRO, PASTILLAS], consumos);
+  const errorDeCantidad = new RangeError(MENSAJE_CANTIDAD_NO_VALIDA);
+
+  it.each(CANTIDADES_NO_VALIDAS)('[C-5] rechaza un consumo de cantidad $caso', ({ cantidad }) => {
+    expect(descontarConsumos([consumo('r-1', cantidad)])).toThrow(errorDeCantidad);
+  });
+
+  it.each(LISTAS_CON_UN_CONSUMO_MALO)('[C-5] rechaza un consumo malo $caso', ({ consumos }) => {
+    expect(descontarConsumos(consumos)).toThrow(errorDeCantidad);
+  });
+
+  it('[C-5] el mayor entero seguro es una cantidad válida: falta stock, no es un error', () => {
+    const resultado = descontar([FILTRO], [consumo('r-1', Number.MAX_SAFE_INTEGER)]);
+    const falta = Number.MAX_SAFE_INTEGER - FILTRO.stock;
+
+    expect(resultado).toEqual({ ok: false, faltan: [{ referencia: 'FIL-01', falta }] });
+  });
+
+  it('[C-5] una lista con un consumo malo se rechaza y no toca las existencias', () => {
+    fc.assert(
+      fc.property(
+        existenciasArbitrarias,
+        consumosArbitrarios,
+        cantidadNoValida,
+        consumosArbitrarios,
+        (existencias, antes, mala, despues) => {
+          const copia = structuredClone(existencias);
+          const consumos = [...antes, consumo('a', mala), ...despues];
+
+          expect(() => descontar(existencias, consumos)).toThrow(errorDeCantidad);
+          expect(existencias).toEqual(copia);
+        },
+      ),
+    );
   });
 });
 
