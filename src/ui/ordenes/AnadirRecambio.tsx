@@ -1,4 +1,4 @@
-import { Boton } from '../Boton';
+import { BotonDeEnvio } from '../BotonDeEnvio';
 import { EstadoVacio } from '../EstadoVacio';
 
 type RecambioElegible = { id: string; referencia: string; nombre: string };
@@ -59,9 +59,7 @@ export function AnadirRecambio({ ordenId, recambios, accion }: PropsAnadir) {
           className={CAMPO}
         />
       </div>
-      <Boton type="submit" variante="secundario">
-        Añadir
-      </Boton>
+      <BotonDeEnvio variante="secundario">Añadir</BotonDeEnvio>
     </form>
   );
 }

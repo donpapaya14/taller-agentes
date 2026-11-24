@@ -84,3 +84,16 @@ describe('AnadirRecambio: lo que envía', () => {
     });
   });
 });
+
+describe('AnadirRecambio: un solo envío', () => {
+  // Un segundo toque añadiría el mismo recambio dos veces.
+  it('[D-13] mientras se envía, «Añadir» queda desactivado para no enviar dos veces', async () => {
+    dibujar(RECAMBIOS, vi.fn<(datos: FormData) => void>(() => new Promise<void>(() => undefined)));
+    fireEvent.change(screen.getByLabelText('Recambio'), { target: { value: FILTRO } });
+    const boton = screen.getByRole('button', { name: 'Añadir' });
+
+    fireEvent.click(boton);
+
+    await waitFor(() => expect(boton.hasAttribute('disabled')).toBe(true));
+  });
+});

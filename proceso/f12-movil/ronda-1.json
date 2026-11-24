@@ -1,0 +1,101 @@
+{
+  "feature": "f12-movil",
+  "ronda": 1,
+  "fecha": "2026-11-24",
+  "commitRevisado": "359cad970559b61d8b4a06998b94ff1678b7789e",
+  "veredicto": "PASA",
+  "comandos": [
+    {
+      "comando": "git log --oneline main...paso-15; git merge-base main paso-15; git rev-list --oneline paso-15..main; git diff --stat main...paso-15; git status --short",
+      "resultado": "OK",
+      "resumen": "La rama tiene dos commits sobre main: 6d3fdf6 (e2e de móvil y smoke, enlace de restablecer, doble toque, proxy, foco y descripción de la orden) y 359cad9 (botón de envío en los formularios de la ficha y reposición de contraseñas en el login). La base de fusión es el último commit de main (ce28ee5) y main no tiene nada que paso-15 no tenga: no hay merges y el diff es solo la feature, 33 archivos con 959 inserciones y 95 borrados (16 de código de producción, 13 tests de src, tests/diseno/puntos-de-ruptura.test.ts y los tres de tests/e2e: ayuda.ts, movil.spec.ts y smoke.spec.ts). No toca package.json, package-lock.json, DIRECTRICES.md, los agentes, tokens.css, la configuración de las puertas ni los workflows. El árbol de trabajo estaba limpio al empezar y al acabar."
+    },
+    {
+      "comando": "npm run check:full",
+      "resultado": "OK",
+      "resumen": "Sale con 0 sobre 359cad9 en unos 17 s. eslint y tsc limpios; vitest con 106 archivos y 1727 tests en verde; cobertura 99,61 % de sentencias (1289 de 1294), 99,5 % de ramas, 100 % de funciones y 99,55 % de líneas (la única línea sin cubrir de lo tocado, acciones.ts:74, es de antes del rango); depcruise con 179 módulos y 583 dependencias sin violaciones; las puertas sin hallazgos: umbrales, jscpd con un solo clon de 8 líneas (0,03 %, entre recambios/acciones.test.ts y tests/apoyo/next-falso.ts, ninguno de los dos del rango), knip con dos hallazgos de antes del rango (prettier y el tipo DatosRecambio) dentro del trinquete, y trinquete. El detector de manipulación solo da avisos: 32 de mocks añadidos en tests y 4 de comprobaciones silenciadas en rondas antiguas de f01, f03, f04 y f06, ya aceptadas por UMBRAL. Salen sobre todo el historial porque la copia no tiene origin/main y las puertas comparan con el primer commit."
+    },
+    {
+      "comando": "npm run build",
+      "resultado": "OK",
+      "resumen": "Next 16.4.6 con Turbopack compila y pasa TypeScript sin avisos. Rutas: / , /login, /ordenes/[id], /ordenes/[id]/documento, /ordenes/nueva, /recambios, /tablero y el cron dinámicas; /proceso y la 404 estáticas; más el Proxy. Lee el .env.local de la copia (ignorado por git, apunta a la base de DEMO personal)."
+    },
+    {
+      "comando": "lsof -nP -iTCP:3000 -sTCP:LISTEN; npm run start en segundo plano sobre la build de la rama; TaskStop al acabar",
+      "resultado": "OK",
+      "resumen": "El puerto 3000 estaba libre; el proceso que lo ocupó tenía por directorio de trabajo la copia paso-15 y arrancó en 46 ms. Se paró dos veces (tras las sondas y tras las specs extra) y las dos el puerto quedó libre, sin procesos next vivos y con git sin cambios. DEMO_PASSWORD se leyó con el cargador de entorno de Next, sin imprimirla, y toda la salida de Playwright y de las sondas pasó por un filtro que la tapa (el registro de llamadas de un fill fallido la enseñaría). .env.local no se abrió: solo se listaron los nombres de sus variables."
+    },
+    {
+      "comando": "URL_BASE=http://127.0.0.1:3000 DEMO_PASSWORD=… npm run gate:e2e (dos pasadas, la segunda tras restablecer la demo)",
+      "resultado": "OK",
+      "resumen": "14 tests pasan en 10,9 s y otra vez 14 en 11,0 s: siete por proyecto, movil (390x844) y escritorio (1440x900). Son la barra fija que no tapa el foco, «Pasar a…» que se desactiva y no lanza una segunda acción, y /login, /tablero, /ordenes/[id], /recambios y /proceso sin desborde, con acciones de 48 px o más y sin faltas graves de axe."
+    },
+    {
+      "comando": "URL_BASE=http://127.0.0.1:3000 DEMO_PASSWORD=… npm run smoke (dos pasadas)",
+      "resultado": "OK",
+      "resumen": "12 tests pasan en 8,9 s y otra vez 12 en 9,1 s (seis por proyecto): /proceso 200 con «Cómo se construyó», ninguna navegación a vercel.com ni 401, el jefe ve matrículas, el mecánico abre una orden en «Listo» sin «Entregar» (y con el jefe sí aparece), el jefe del otro taller no ve ninguna matrícula del primero, y la acción con la sesión caducada lleva a /login y no a la pantalla de error."
+    },
+    {
+      "comando": "URL_BASE=http://127.0.0.1:3000 npx playwright test tests/e2e/pantallas-publicas.spec.ts tests/e2e/tablero-visual.spec.ts",
+      "resultado": "OK",
+      "resumen": "16 tests pasan en 3,2 s. Son las dos specs de e2e que ya había y que los scripts e2e y smoke no lanzan: la de tablero-visual pinta TarjetaOrden, que el rango cambia (ahora con BotonDeEnvio)."
+    },
+    {
+      "comando": "npm run spec:check",
+      "resultado": "OK",
+      "resumen": "15 criterios: 14 VERIFICADO, 0 ROJO, 0 SIN TEST, 1 MANUAL (D-13, que mide gate:e2e) y 0 OMITIDO."
+    },
+    {
+      "comando": "Búsquedas con expresiones regulares sobre las líneas añadidas por main...paso-15; gitleaks git --redact --log-opts=main..paso-15 y gitleaks dir en src, tests, proceso, docs, supabase y scripts; búsquedas de catch, esperas fijas y atajos en tests/e2e",
+      "resultado": "OK",
+      "resumen": "Cero coincidencias de comentarios que apagan eslint, TypeScript, la cobertura o la mutación (eslint[-]disable, @ts[-]ignore, @ts[-]expect[-]error, v8[ ]ignore, Stryker[ ]disable), de any, de skip, only o todo en tests, de HTML inyectado o eval, de catch vacío, de emojis, de colores o medidas sueltos en CSS y TSX de producción, de aria-hidden, hidden o sr-only añadidos para esquivar a axe y de secretos o literales largos (el único literal largo es un identificador de acción inventado en proxy.test.ts). gitleaks: 2 commits escaneados, sin filtraciones, y las seis carpetas sin hallazgos. En tests/e2e, el único force es el segundo toque forzado a propósito en movil.spec.ts y no hay catch ni esperas de tiempo fijo en los tres archivos nuevos. No se tocó package.json ni tokens.css, y el mínimo de 48 px sigue en 48 (ALTO_MINIMO_DE_ACCION) y en --toque, que mide 3,5 rem."
+    },
+    {
+      "comando": "Playwright 1.65.1 en Chromium a 390x844 con @axe-core/playwright y axe-core 4.14.1 (todas las reglas, no solo serious y critical), desborde por scrollWidth y por elementos fuera de la ventana, acciones bajo 48 px, letra bajo 14 px y foco por teclado bajo la barra; sondas de Testing fuera del repo",
+      "resultado": "OK",
+      "resumen": "Se midieron las pantallas que el e2e de Develop no recorre, además de las suyas: / (inicio) y /proceso sin sesión; como jefe /tablero, /ordenes/nueva, /recambios, la ficha en los cuatro estados de los datos de partida (recibido, en reparación, listo y entregado) y la pantalla «ESA PÁGINA NO EXISTE» dentro del armazón (con un UUID que no existe y con un id que no es UUID); como mecánico /tablero, /recambios, /ordenes/nueva y la ficha en «Listo». En todas: scrollWidth 390, ningún elemento fuera de la ventana, 0 faltas de axe de cualquier gravedad, ninguna letra por debajo de 14 px y ningún elemento enfocado queda bajo la barra fija (en las que tienen barra). Los controles por debajo de 48 px son tres y ninguno es un botón de acción: el enlace de marca «FOSO» (26,6 px, de f09), el enlace de la matrícula de cada tarjeta del tablero (44 px) y los enlaces dentro de texto de /proceso (17 px); los botones de acción miden 56 px. Capturas revisadas a ojo: /login con el enlace nuevo y con el aviso, la ficha en «Listo», el alta con errores y la pantalla de error sin red."
+    },
+    {
+      "comando": "Playwright sobre la misma build: «¿No puedes entrar? Restablecer la demo» con un clic, con doble clic, con un segundo clic forzado tras ver «Restableciendo la demo…», con la red cortada, con JavaScript desactivado y a 28 anchos de 320 a 1920 px (sondas de Testing)",
+      "resultado": "OK",
+      "resumen": "Un clic, un doble clic y un segundo clic con el botón ya desactivado lanzan una sola acción. La primera pulsación (04:38) dio «Demo restablecida. Ya puedes entrar» en 844 ms, como estado (role status), con el botón de 302x56 px, otra vez activo después y con axe a 0; las siguientes dieron «La demo se restableció hace menos de 10 minutos. Prueba a entrar», también sin JavaScript. Con la red cortada la persona ve «ALGO HA FALLADO. Vuelve a intentarlo. Si sigue pasando, sal y entra de nuevo» con «Reintentar» y «Salir» (ver observaciones). De 320 a 1920 px el aviso no se desborda y el botón mide 48 px o más en los 28 anchos. En total 8 llamadas llegaron al servidor: una RESTABLECIDO (la primera) y siete EN_ESPERA; aparte de ese restablecimiento no se escribió nada en la base."
+    },
+    {
+      "comando": "fetch desde Node contra la build, sin sesión: GET, HEAD, POST, PUT, DELETE y PATCH a /tablero, /ordenes/nueva, /recambios, /ordenes/<uuid> y /ordenes/<uuid>/documento; POST con una cabecera next-action inventada; el cron sin secreto, con uno falso y por POST",
+      "resultado": "OK",
+      "resumen": "GET y HEAD a /tablero dan 307 a /login desde el proxy. POST, PUT, DELETE y PATCH ya no los redirige el proxy: los redirige la propia página (307 a /login, con el esqueleto HTML de 7,5 a 8 KB; el cuerpo del POST a /tablero no contiene «matricula-caracteres», es decir, ningún dato). Un POST con next-action inventado da 409 y el servidor registra «Failed to find Server Action»; el POST a /documento y al cron da 405 y el GET sin sesión a /documento, 307; el cron sin secreto o con uno falso, 401. En el código, las nueve acciones de servidor de (taller) (seis de la ficha, nueva orden, recambios y tablero) empiezan por leerSesion() y mandan a /login, y las de la ficha comprueban el rol con puede()."
+    },
+    {
+      "comando": "Playwright sobre la misma build, como jefe en /ordenes/nueva con «Vehículo nuevo»: textos larguísimos sin espacios, una entrega con datos basura y descripciones con saltos de línea (sondas de Testing; todo lo que se entregó lleva una matrícula que el servidor rechaza, así que no se guardó nada)",
+      "resultado": "OK",
+      "resumen": "Con 120 caracteres en matrícula, marca y modelo, 200 en el nombre, 60 en el teléfono y 700 en la descripción, marca y modelo cortan en 40, el nombre en 80 y la descripción en 500 (la matrícula y el teléfono no llevan tope en el navegador y se quedan en 120 y 60) y no hay desborde. La entrega con matrícula ZZZ, marca x, modelo y, nombre n, teléfono 12 y descripción abc da, junto a cada campo y en español, «Matrícula no válida. Ejemplo: 1234 BCD», «Teléfono no válido. Nueve cifras, por ejemplo 612 345 678» y «Describe la avería o el trabajo (entre 5 y 500 letras)», sin desborde y con axe a 0. De extremo a extremo se aceptan una descripción de 496 caracteres con 15 saltos de línea, otra de 500 con 100 saltos y otra de 500 con un salto cada cuatro letras (solo falla la matrícula puesta a propósito), y se rechaza la de 3 caracteres: el arreglo de los saltos funciona también en el alta con vehículo nuevo."
+    },
+    {
+      "comando": "Playwright sobre la misma build: la ficha del primer taller abierta por el jefe del otro, su PDF, y la ficha y el PDF de una orden en «Listo» abiertos por el mecánico (sondas de Testing)",
+      "resultado": "OK",
+      "resumen": "El jefe del otro taller abre la orden del primero y ve «ESA PÁGINA NO EXISTE» sin ningún dato (la respuesta es HTTP 200, ver observaciones), y su /documento da 404. El mecánico ve la ficha de «Listo» sin botón «Entregar» (0) y sin ningún «€», y su /documento da 403; el jefe recibe 200 con application/pdf."
+    },
+    {
+      "comando": "Playwright sobre la misma build: comprobación de foco de movil.spec.ts repetida a mano con y sin el margen de desplazamiento; valor calculado de scroll-padding-bottom a 390 y a 1440 px",
+      "resultado": "OK",
+      "resumen": "Con el margen del repo no hay ningún elemento tapado; con el margen anulado a mano la misma comprobación señala 7 (por ejemplo, el selector de recambio llega hasta 842,8 px con la barra empezando en 787): el test tiene dientes. El margen calculado es 64 px a 390 px y 0 px a 1440 px."
+    },
+    {
+      "comando": "Playwright sobre la misma build: consola, errores de página, peticiones fallidas y respuestas de 400 o más en /tablero, /recambios, /ordenes/nueva, una ficha, /, /proceso, /login y tras restablecer",
+      "resultado": "OK",
+      "resumen": "Sin errores ni avisos de consola, sin errores de página (hidratación incluida), sin peticiones fallidas y sin respuestas de 400 o más. El único error del log del servidor es el de la acción inventada del POST de prueba."
+    },
+    {
+      "comando": "35 mutaciones de una línea sobre una copia desechable de la rama fuera del repo (git archive de HEAD), cada una con la suite entera de vitest (la base de la copia da 106 archivos y 1727 tests en verde)",
+      "resultado": "OK",
+      "resumen": "Mueren 34 de 35. Mueren, entre otras: el cron que deja de reponer con la base en espera, el visitante que repone con ella, las opciones ignoradas (siempre como visitante y siempre como el cron), quitar la señal del plazo a cada una de las dos llamadas, el plazo vencido que no se convierte en ERROR, un error que se enseña como aviso bueno, los dos textos intercambiados, HEAD fuera del proxy, orientar siempre y no orientar nunca, el salto suelto sin igualar, el salto guardado como espacio, no igualar nada en el vehículo existente, BotonDeEnvio sin desactivarse o sin enviar, cada uno de los siete formularios de la ficha y del tablero vuelto a un botón normal, el enlace de restablecer sin desactivarse, sin texto de «Restableciendo» y sin aviso o con el aviso de error como estado, y la clase muerta sm: de vuelta en CabeceraOrden. Sobrevive M21, que se cuenta en observaciones."
+    },
+    {
+      "comando": "git add proceso/f12-movil/ronda-1.json; npx vitest run tests/proceso; npm run check:full",
+      "resultado": "OK",
+      "resumen": "Con la ronda ya en el índice y antes del commit: tests/proceso en verde (7 archivos, 28 tests) y check:full sale con 0 en las mismas cifras que antes (106 archivos y 1727 tests, cobertura 99,61 %, 99,5 %, 100 % y 99,55 %, 179 módulos sin violaciones, un clon de 8 líneas, umbrales y trinquete sin hallazgos). El detector de manipulación no dice nada de este archivo. El árbol de git solo tiene este archivo añadido."
+    }
+  ],
+  "fallos": [],
+  "observaciones": "1) Alcance. Se revisó la feature entera: main...paso-15, dos commits sobre el último de main, sin merges, hasta el commitRevisado 359cad9. Cero fallos y ningún comando en rojo: ninguna directriz queda incumplida. Los mensajes de commit salieron al listar autores y atribución; no se toman como evidencia, que sale solo del repo y de los comandos.\n\n2) Qué se midió y cómo. D-1 a D-8, D-11, D-12, D-14 y D-15 con check:full, spec:check, búsquedas sobre las líneas añadidas y 35 mutaciones; D-9, D-10, D-12 y D-13 en un navegador real: la build de la rama servida con next start contra la base de DEMO personal de .env.local, usada solo a través de la app. Se entró como jefe, como mecánico y como jefe del otro taller y se pulsó «Restablecer la demo» (8 llamadas llegaron al servidor, una RESTABLECIDO y siete EN_ESPERA). No se creó ni se cambió ninguna orden: las entregas del formulario llevaban datos que el servidor rechaza y los «Pasar a…» se retuvieron en el navegador y se abortaron antes de salir. No se tocó nada más de Supabase.\n\n3) D-13 más allá de los specs. El e2e de Develop cubre cinco pantallas con la primera orden del tablero y solo como jefe. Se midió además lo que ahí falta (ver los comandos de más arriba) y todo cumple. El enlace de la matrícula de cada tarjeta (44 px, objetivo táctil principal de la tarjeta) no es un botón de acción y el SPEC mide D-13 sobre button y los enlaces con clase de botón; ya lo anotó f10 ronda 1. El enlace de marca «FOSO» (26,6 px) es de f09. El test del foco no mide nada en escritorio por diseño: allí la barra no es una caja.\n\n4) Un test de la feature no guarda un arreglo. De 35 mutaciones, la M21 sobrevive: dejar la descripción del vehículo nuevo (conVehiculoNuevo, src/aplicacion/nueva-orden.ts) sin igualar los saltos de línea no rompe ningún test, porque los tests de saltos de línea usan solo el vehículo existente (conDescripcion parte de VEHICULO_EXISTENTE). Hoy el comportamiento es correcto en el navegador (ver el comando del formulario) y por eso no es un fallo: ninguna directriz pide ese test; es una guarda que falta.\n\n5) Cambios fuera de lo que lista el paso 15 en docs/SPEC.md (crear los tres archivos de tests/e2e; modificar src/app/login/page.tsx y acciones.ts; tocar cualquier archivo de src/ui o src/app solo para arreglar un fallo de [C-16] y decirlo en el informe). El rango modifica además src/proxy.ts, src/aplicacion/nueva-orden.ts y src/aplicacion/restablecer-demo.ts con sus tests, y añade tests/diseno/puntos-de-ruptura.test.ts. Dentro de src/app y src/ui crea src/ui/BotonDeEnvio.tsx y src/app/restablecer-dentro-del-plazo.ts y toca el cron, globals.css y siete componentes de src/ui. No he leído el informe de Develop (testing.md no me lo da): si no los declara, es cosa del orquestador. Ninguna directriz limita el alcance, así que no es un fallo.\n\n6) Cambio de comportamiento del cron (f08). Antes, con la base en espera el cron no reponía las contraseñas y su test lo exigía; ahora restablecerDemo recibe reponerEnEspera, el cron lo pide en true y el test de la ruta espera que repone, y el enlace del login lo pide en false. Queda un hueco pequeño en el lado del visitante: si alguien pulsa el enlace, la base se restablece y reponer las contraseñas falla, la siguiente pulsación dentro de 10 minutos dice «La demo se restableció hace menos de 10 minutos. Prueba a entrar» sin haberlas repuesto hasta el siguiente cron. Solo importa si alguna contraseña de demostración se cambió.\n\n7) Casos que rompen y que ninguna directriz cubre, con su evidencia:\n a) Tras el RESTABLECIDO de las 04:38, la sesión guardada del jefe, que valía segundos antes (con ella se envió el formulario), dejó de valer: /tablero llevó a /login y el navegador se quedó sin cookies de sesión. La causa probable es la reposición de contraseñas (un cambio de contraseña por la API de administración de Auth suele cerrar las sesiones de ese usuario), pero no se comprobó. Quien no tiene sesión puede lanzarlo una vez cada 10 minutos y echar a quien esté probando la demo, que es lo que pide el SPEC (enlace público, control en la base de datos).\n b) Con la red cortada, el enlace de restablecer sustituye todo el login por la pantalla «ALGO HA FALLADO ... Si sigue pasando, sal y entra de nuevo» con «Reintentar» y «Salir». Se entiende, pero habla de salir a alguien que no ha entrado, y el resto de resultados (restablecida, en espera y error del servidor) salen en el aviso de dentro del login.\n c) La ficha de otro taller o inexistente responde HTTP 200 con la pantalla «ESA PÁGINA NO EXISTE» y no 404 (medido con el jefe del otro taller sobre una orden del primero; con un id inexistente o roto la pantalla es la misma, pero no se midió su código). No se filtra ningún dato y su PDF sí da 404. Lo probable es que, con la pantalla de carga de por medio, Next ya haya enviado el 200 cuando la ficha dice que no existe; no se comprobó.\n d) El aviso de restablecer es un role status que nace al llegar la respuesta; con un lector de pantalla real puede no anunciarse (no se pudo probar).\n\n8) Sin comprobar: WebKit y Safari de iOS, Chrome de Android, un lector de pantalla real, el teclado virtual, el despliegue de Vercel, RLS contra otro Supabase que no sea la demo (se usó solo la app) y la mutación completa de Stryker (gate:mutacion es del paso 16)."
+}

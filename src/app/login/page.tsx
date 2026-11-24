@@ -2,23 +2,13 @@
 
 import type { InputHTMLAttributes } from 'react';
 import { use, useActionState } from 'react';
+import { Aviso } from '@/ui/Aviso';
 import { Boton } from '@/ui/Boton';
 import { IconoAvanzar, IconoLlave } from '@/ui/iconos';
-import { entrar, entrarComoDemo } from './acciones';
+import { entrar, entrarComoDemo, restablecer } from './acciones';
 
 const AVISO_DE_DEMO =
   'No se pudo entrar con la cuenta de demostración. Inténtalo de nuevo en unos minutos.';
-
-function Aviso({ texto }: { texto: string }) {
-  return (
-    <p
-      role="alert"
-      className="rounded-pieza border border-averia bg-chapa px-e4 py-e3 text-menor text-averia"
-    >
-      {texto}
-    </p>
-  );
-}
 
 type PropsCampo = InputHTMLAttributes<HTMLInputElement> & { id: string; etiqueta: string };
 
@@ -59,7 +49,7 @@ function FormularioDeCorreo() {
         type="password"
         autoComplete="current-password"
       />
-      {estado.error !== null && <Aviso texto={estado.error} />}
+      {estado.error !== null && <Aviso tipo="error" texto={estado.error} />}
       <Boton type="submit" disabled={entrando} className="w-full">
         Entrar
         <IconoAvanzar className="size-e5 shrink-0" />
@@ -74,7 +64,7 @@ function AccesosDeDemostracion({ conAviso }: { conAviso: boolean }) {
       <h2 className="font-dato text-nota tracking-dato text-acero uppercase">
         Accesos de demostración
       </h2>
-      {conAviso && <Aviso texto={AVISO_DE_DEMO} />}
+      {conAviso && <Aviso tipo="error" texto={AVISO_DE_DEMO} />}
       {[
         { rol: 'jefe', texto: 'Entrar como jefe' },
         { rol: 'mecanico', texto: 'Entrar como mecánico' },
@@ -91,6 +81,25 @@ function AccesosDeDemostracion({ conAviso }: { conAviso: boolean }) {
           <IconoLlave className="size-e5 shrink-0 text-lampara group-hover:text-foso" />
         </Boton>
       ))}
+    </form>
+  );
+}
+
+// Un botón con el aspecto de un enlace: restablecer es una acción, no una página a la que ir. Mide
+// lo mismo que cualquier botón de acción (--toque) aunque pase desapercibido.
+function RestablecerDemo() {
+  const [resultado, accionRestablecer, restableciendo] = useActionState(restablecer, null);
+
+  return (
+    <form action={accionRestablecer} className="flex flex-col gap-e3">
+      {resultado !== null && <Aviso tipo={resultado.tipo} texto={resultado.texto} />}
+      <button
+        type="submit"
+        disabled={restableciendo}
+        className="min-h-toque self-start text-left text-menor text-acero underline disabled:cursor-not-allowed not-disabled:hover:text-hueso"
+      >
+        {restableciendo ? 'Restableciendo la demo…' : '¿No puedes entrar? Restablecer la demo'}
+      </button>
     </form>
   );
 }
@@ -115,6 +124,7 @@ export default function Login({
         <div className="flex w-full max-w-lectura flex-col gap-e6 rounded-pieza border border-raya bg-chapa p-e5 lg:justify-self-end">
           <FormularioDeCorreo />
           <AccesosDeDemostracion conAviso={error === 'demo'} />
+          <RestablecerDemo />
         </div>
       </div>
     </main>

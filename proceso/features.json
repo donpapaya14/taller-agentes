@@ -69,6 +69,6 @@
     "id": "f12-movil",
     "titulo": "Móvil y accesibilidad",
     "resumen": "La app a 390 px, accesibilidad con axe, pruebas E2E con Playwright y el enlace para restablecer la demo.",
-    "estado": "pendiente"
+    "estado": "hecha"
   }
 ]

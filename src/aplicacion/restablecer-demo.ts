@@ -9,19 +9,30 @@ type Puerto = {
   reponerContrasenas: () => Promise<void>;
 };
 
+export type OpcionesDeRestablecer = {
+  // Qué hacer con las contraseñas cuando la base contesta que ya se restableció hace poco.
+  reponerEnEspera: boolean;
+};
+
 const MOTIVO_DEL_ERROR = 'No se pudo restablecer la demo';
 
 // Lo único que contesta restablecer_demo. Lo que llegue de la base de datos se comprueba antes de
 // decidir nada con ello: un valor que no es ninguno de los dos no se toma por «restablecido».
 const respuestaDeLaBase = z.enum(['RESTABLECIDO', 'EN_ESPERA']);
 
-// Las contraseñas solo se reponen si la base de datos acaba de restablecerse: con la espera de 10
-// minutos no ha cambiado nada y no hay nada que reponer. Cualquier fallo, también el de reponerlas,
-// sale con el mismo mensaje: el detalle es de quien opera la demo, no de quien la pide.
-export async function restablecerDemo(puerto: Puerto): Promise<ResultadoRestablecer> {
+// Con la base restablecida las contraseñas se reponen siempre. Con la espera de 10 minutos, solo si
+// quien pide es de confianza (`reponerEnEspera`): así el cron recupera un intento anterior en el que
+// la base se restableció y las contraseñas no, y quien pulsa el enlace del login, que puede ser
+// cualquiera, no dispara llamadas de administración a Auth cada vez que pulsa. Cualquier fallo,
+// también el de reponerlas, sale con el mismo mensaje: el detalle es de quien opera la demo, no de
+// quien la pide.
+export async function restablecerDemo(
+  puerto: Puerto,
+  { reponerEnEspera }: OpcionesDeRestablecer,
+): Promise<ResultadoRestablecer> {
   try {
     const estado = respuestaDeLaBase.parse(await puerto.rpcRestablecer());
-    if (estado === 'RESTABLECIDO') await puerto.reponerContrasenas();
+    if (estado === 'RESTABLECIDO' || reponerEnEspera) await puerto.reponerContrasenas();
     return { estado };
   } catch {
     return { estado: 'ERROR', motivo: MOTIVO_DEL_ERROR };

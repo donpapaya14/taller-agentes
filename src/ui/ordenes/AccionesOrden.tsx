@@ -1,4 +1,5 @@
-import { Boton, clasesDeBoton } from '../Boton';
+import { clasesDeBoton } from '../Boton';
+import { BotonDeEnvio } from '../BotonDeEnvio';
 import { IconoAvanzar, IconoLlave } from '../iconos';
 
 type PropsAcciones = {
@@ -52,10 +53,10 @@ function Entrega({ ordenId, accion }: { ordenId: string; accion: PropsAcciones['
       <p className="max-w-lectura text-menor text-acero">
         Se descontarán los recambios del almacén y se emitirá la factura
       </p>
-      <Boton type="submit">
+      <BotonDeEnvio>
         Entregar
         <IconoLlave className="size-e5 shrink-0" />
-      </Boton>
+      </BotonDeEnvio>
     </form>
   );
 }

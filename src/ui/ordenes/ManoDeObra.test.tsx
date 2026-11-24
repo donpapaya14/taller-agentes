@@ -55,3 +55,19 @@ describe('ManoDeObra', () => {
     );
   });
 });
+
+describe('ManoDeObra: un solo envío', () => {
+  // Un segundo toque guardaría los mismos minutos otra vez, con el total ya recalculado.
+  it('[D-13] mientras guarda, «Guardar mano de obra» queda desactivado para no enviar dos veces', async () => {
+    dibujar(
+      90,
+      vi.fn<(datos: FormData) => void>(() => new Promise<void>(() => undefined)),
+    );
+
+    const boton = screen.getByRole('button', { name: 'Guardar mano de obra' });
+
+    fireEvent.click(boton);
+
+    await waitFor(() => expect(boton.hasAttribute('disabled')).toBe(true));
+  });
+});

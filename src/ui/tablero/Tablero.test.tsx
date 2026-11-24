@@ -91,6 +91,22 @@ describe('Tablero: tarjeta', () => {
   });
 });
 
+describe('Tablero: un solo envío', () => {
+  // Un segundo toque encontraría la orden ya movida y acabaría en un aviso de error.
+  it('[D-13] mientras avanza la orden, el botón de su tarjeta queda desactivado', async () => {
+    const accionAvanzar = vi.fn(() => new Promise<void>(() => undefined));
+    render(<Tablero ordenes={[orden()]} puedeEntregar={false} accionAvanzar={accionAvanzar} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pasar a en reparación' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Pasar a en reparación' }).hasAttribute('disabled'),
+      ).toBe(true),
+    );
+  });
+});
+
 describe('Tablero: entrega', () => {
   it('[C-3] sin permiso de entrega no aparece Entregar', () => {
     render(<Tablero ordenes={[orden({ estado: 'listo' })]} puedeEntregar={false} />);
