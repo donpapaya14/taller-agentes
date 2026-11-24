@@ -17,7 +17,13 @@ import {
   ORDEN_RESUMEN,
 } from '../../../tests/apoyo/filas-de-ejemplo';
 import { SELECCION_ORDEN_DETALLE, SELECCION_ORDEN_RESUMEN, SELECCION_VEHICULO } from './filas';
-import { crearOrden, leerOrden, listarOrdenes, listarVehiculos, MatriculaRepetida } from './ordenes';
+import {
+  crearOrden,
+  leerOrden,
+  listarOrdenes,
+  listarVehiculos,
+  MatriculaRepetida,
+} from './ordenes';
 
 vi.mock('./cliente-servidor', () =>
   import('../../../tests/apoyo/cliente-falso').then((modulo) => modulo.clienteServidorFalso),
@@ -112,6 +118,15 @@ describe('leerOrden', () => {
     preparar(mal('timeout'));
 
     await expect(leerOrden(ID_ORDEN)).rejects.toThrow(new Error(MENSAJES.leerOrden));
+  });
+
+  it('[D-14] el error de Supabase queda como causa: quien captura sabe que viene de la base de datos', async () => {
+    preparar(mal('permission denied', '42501'));
+
+    await expect(leerOrden(ID_ORDEN)).rejects.toMatchObject({
+      message: MENSAJES.leerOrden,
+      cause: { message: 'permission denied', code: '42501' },
+    });
   });
 });
 
