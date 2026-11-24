@@ -1333,7 +1333,7 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 | C-18 | VERIFICADO | 11 | 2026-11-24 |
 | P-1 | VERIFICADO | 3 | 2026-11-24 |
 | P-2 | VERIFICADO | 5 | 2026-11-24 |
-| P-3 | VERIFICADO | 2 | 2026-11-24 |
+| P-3 | VERIFICADO | 3 | 2026-11-24 |
 | P-4 | VERIFICADO | 17 | 2026-11-24 |
 | P-5 | MANUAL | 0 | 2026-11-24 |
 | P-6 | VERIFICADO | 7 | 2026-11-24 |
