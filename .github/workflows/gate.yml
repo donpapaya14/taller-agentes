@@ -210,5 +210,8 @@ jobs:
       - run: npm ci
       - name: Desplegar
         run: npm run desplegar
+      # El smoke es una prueba de Playwright: el runner de GitHub no trae el navegador.
+      - name: Instalar el navegador del smoke
+        run: npx playwright install --with-deps chromium
       - name: Smoke de producción
         run: npm run smoke

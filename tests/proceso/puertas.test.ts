@@ -51,4 +51,26 @@ describe('puertas de calidad', () => {
     );
     expect(sinMotivo).toEqual([]);
   });
+
+  it('[P-3] check:full termina en spec:check, que cruza el SPEC y las directrices con los tests', () => {
+    const { scripts } = leerJson<{ scripts: Record<string, string> }>('package.json');
+
+    expect(scripts['check:full']).toMatch(/&& npm run spec:check$/);
+    expect(scripts['spec:check']).toContain('--specs docs/SPEC.md,DIRECTRICES.md');
+    expect(scripts['spec:check']).toContain('--vitest reports/vitest.json');
+    expect(scripts['spec:check']).not.toContain('--no-escribir');
+  });
+
+  it('[P-1] el job desplegar instala el navegador antes del smoke de producción', () => {
+    const gate = readFileSync(resolve(raiz, '.github/workflows/gate.yml'), 'utf8');
+    const inicioDelJob = gate.indexOf('\n  desplegar:');
+    expect(inicioDelJob).toBeGreaterThan(-1);
+    const desplegar = gate.slice(inicioDelJob);
+
+    const instalacion = desplegar.indexOf('npx playwright install --with-deps chromium');
+    const smoke = desplegar.indexOf('npm run smoke');
+
+    expect(instalacion).toBeGreaterThan(-1);
+    expect(smoke).toBeGreaterThan(instalacion);
+  });
 });
