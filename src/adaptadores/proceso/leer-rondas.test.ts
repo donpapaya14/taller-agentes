@@ -221,15 +221,15 @@ describe('huecosDeRondas', () => {
   });
 
   it.each([
-    [[1, 3], 2],
-    [[2, 3], 1],
-    [[2], 1],
-    [[1, 2, 4], 3],
-    [[1, 2, 2], 3],
-  ])('[P-4] con las rondas %j el texto nombra la ronda %i', (numeros, falta) => {
+    [[1, 3], /ronda 2\b/],
+    [[2, 3], /ronda 1\b/],
+    [[2], /ronda 1\b/],
+    [[1, 2, 4], /ronda 3\b/],
+    [[1, 2, 2], /ronda 3\b/],
+  ])('[P-4] con las rondas %j el texto nombra la ronda que falta: %s', (numeros, nombraLaRonda) => {
     const texto = huecosDeRondas(featureConNumeros(numeros));
 
-    expect(texto).toMatch(new RegExp(`ronda ${falta}\\b`));
+    expect(texto).toMatch(nombraLaRonda);
     expect(texto).toContain('f-a');
   });
 
@@ -254,9 +254,8 @@ describe('huecosDeRondas', () => {
         const numeros = Array.from({ length: cuantas + 1 }, (_, indice) => indice + 1);
         const conHueco = numeros.filter((numero) => numero !== falta);
 
-        expect(huecosDeRondas(featureConNumeros(conHueco))).toMatch(
-          new RegExp(`ronda ${falta}\\b`),
-        );
+        // «ronda 2 en» y no solo «ronda 2»: así «ronda 20» no vale por «ronda 2».
+        expect(huecosDeRondas(featureConNumeros(conHueco))).toContain(`ronda ${falta} en `);
       }),
     );
   });
