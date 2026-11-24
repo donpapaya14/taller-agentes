@@ -63,7 +63,7 @@
     "id": "f11-pantalla-recambios",
     "titulo": "Almacén de recambios",
     "resumen": "La lista de recambios con el stock como dato grande y los que están bajo mínimo arriba, en ámbar.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f12-movil",
