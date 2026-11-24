@@ -4,11 +4,17 @@ import { describe, expect, it } from 'vitest';
 import {
   COMANDOS,
   R,
+  URL_BASE,
+  conArchivo,
+  conComando,
+  conPagina,
   correr,
   filaDe,
   mundoEnVerde,
-  type Mundo,
-  type Resultado,
+  rawDe,
+  sinArchivo,
+  sinComando,
+  type Cambio,
 } from '../apoyo/checklist-falso';
 
 const raiz = resolve(import.meta.dirname, '../..');
@@ -73,32 +79,20 @@ describe('checklist de entrega: la tabla', () => {
   });
 });
 
-type Cambio = (mundo: Mundo) => void;
-
-const sinArchivo =
-  (ruta: string): Cambio =>
-  (mundo) => {
-    delete mundo.archivos[ruta];
-  };
-const conArchivo =
-  (ruta: string, texto: string): Cambio =>
-  (mundo) => {
-    mundo.archivos[ruta] = texto;
-  };
-const conComando =
-  (comando: string, resultado: Resultado): Cambio =>
-  (mundo) => {
-    mundo.comandos[comando] = resultado;
-  };
-
 const CON_STRIPE = '{"dependencies":{"next":"16.4.6","stripe":"1.0.0"}}';
 const CON_OPENAI = '{"dependencies":{"next":"16.4.6"},"devDependencies":{"openai":"1.0.0"}}';
 const SIN_NEXT = '{"dependencies":{}}';
 const CON_HALLAZGOS = { codigo: 1, salida: 'leaks found: 2' };
 const SMOKE_ROJO = { codigo: 1, salida: '1 failed' };
 const REPO_PRIVADO = { codigo: 0, salida: '{"visibility":"PRIVATE"}' };
+const GH_SIN_JSON = { codigo: 0, salida: 'no soy json' };
 const SIN_COMMITS_DE_CLAUDE = { codigo: 0, salida: 'Corrige un test\n' };
 const SIN_FEATURES = { codigo: 1, salida: 'Features sin hacer: 1 de 12\n- f12 [pendiente] Móvil' };
+const REDIRIGE = { estado: 307, cuerpo: '' };
+const SIN_AUTORIZAR = { estado: 401, cuerpo: 'Authentication Required' };
+const ENLAZA_AL_ACCESO = { estado: 200, cuerpo: '<a href="https://vercel.com/login?next=/">' };
+const NO_ENCONTRADO = { estado: 404, cuerpo: 'Not Found' };
+const SIN_RED = new Error('getaddrinfo ENOTFOUND taller-agentes');
 
 const FALLOS: [string, Cambio, string, string][] = [
   ['package.json sin next', conArchivo('package.json', SIN_NEXT), R.next, 'next'],
@@ -106,13 +100,22 @@ const FALLOS: [string, Cambio, string, string][] = [
     'commits sin Co-Authored-By',
     conComando(COMANDOS.gitLog, SIN_COMMITS_DE_CLAUDE),
     R.claude,
-    'Co-Authored-By',
+    'Co-Authored',
   ],
   ['sin CLAUDE.md', sinArchivo('CLAUDE.md'), R.orquestador, 'CLAUDE.md'],
   ['sin develop.md', sinArchivo('.claude/agents/develop.md'), R.develop, 'develop.md'],
   ['sin testing.md', sinArchivo('.claude/agents/testing.md'), R.testing, 'testing.md'],
   ['sin DIRECTRICES.md', sinArchivo('DIRECTRICES.md'), R.testing, 'DIRECTRICES.md'],
   ['una feature sin hacer', conComando(COMANDOS.entregaCheck, SIN_FEATURES), R.rondas, 'f12'],
+  ['/proceso con una redirección', conPagina(`${URL_BASE}/proceso`, REDIRIGE), R.publica, '307'],
+  ['/login con un 401', conPagina(`${URL_BASE}/login`, SIN_AUTORIZAR), R.publica, '401'],
+  [
+    '/login que enlaza a Vercel',
+    conPagina(`${URL_BASE}/login`, ENLAZA_AL_ACCESO),
+    R.publica,
+    'vercel.com/login',
+  ],
+  ['la red caída', conPagina(`${URL_BASE}/proceso`, SIN_RED), R.publica, 'ENOTFOUND'],
   ['stripe en dependencies', conArchivo('package.json', CON_STRIPE), R.coste, 'stripe'],
   ['openai en devDependencies', conArchivo('package.json', CON_OPENAI), R.coste, 'openai'],
   [
@@ -121,7 +124,25 @@ const FALLOS: [string, Cambio, string, string][] = [
     R.claves,
     'leaks found: 2',
   ],
+  [
+    'gitleaks sin instalar',
+    sinComando(COMANDOS.gitleaks),
+    R.claves,
+    'no existe el comando gitleaks',
+  ],
   ['el repositorio privado', conComando(COMANDOS.ghRepoView, REPO_PRIVADO), R.repo, 'PRIVATE'],
+  [
+    'una respuesta de gh que no es JSON',
+    conComando(COMANDOS.ghRepoView, GH_SIN_JSON),
+    R.repo,
+    'no se pudo comprobar',
+  ],
+  [
+    'un .md que no se lee sin sesión',
+    conPagina(rawDe('DIRECTRICES.md'), NO_ENCONTRADO),
+    R.repo,
+    'DIRECTRICES.md (404)',
+  ],
   ['el smoke en rojo', conComando(COMANDOS.smoke, SMOKE_ROJO), R.usuario, '1 failed'],
   [
     'el README sin la contraseña puesta',

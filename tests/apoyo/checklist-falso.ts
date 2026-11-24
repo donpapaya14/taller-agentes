@@ -133,3 +133,36 @@ export async function correr(mundo: Mundo, entorno: Entorno = ENTORNO_COMPLETO) 
 
 export const filaDe = (filas: Fila[], requisito: string) =>
   filas.find((fila) => fila.requisito === requisito);
+
+// Lo que se estropea de un mundo en verde para que falle una sola comprobación.
+export type Cambio = (mundo: Mundo) => void;
+
+export const sinArchivo =
+  (ruta: string): Cambio =>
+  (mundo) => {
+    delete mundo.archivos[ruta];
+  };
+
+export const conArchivo =
+  (ruta: string, texto: string): Cambio =>
+  (mundo) => {
+    mundo.archivos[ruta] = texto;
+  };
+
+export const sinComando =
+  (comando: string): Cambio =>
+  (mundo) => {
+    delete mundo.comandos[comando];
+  };
+
+export const conComando =
+  (comando: string, resultado: Resultado): Cambio =>
+  (mundo) => {
+    mundo.comandos[comando] = resultado;
+  };
+
+export const conPagina =
+  (url: string, respuesta: Respuesta | Error): Cambio =>
+  (mundo) => {
+    mundo.paginas[url] = respuesta;
+  };

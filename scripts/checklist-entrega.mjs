@@ -5,12 +5,9 @@
 // Uso: URL_BASE=https://... DEMO_PASSWORD=... [REPO=propietario/repositorio] npm run checklist
 // Sin URL_BASE las comprobaciones de la web salen FALLO; sin REPO se usa donpapaya14/taller-agentes.
 // Salida: 0 sin FALLO, 1 con algún FALLO, 2 si el entorno está mal formado.
-import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { sistemaReal } from './checklist-sistema.mjs';
 import { seEjecutaDirectamente } from './puertas/lib/puerta.mjs';
 
-const RAIZ = resolve(import.meta.dirname, '..');
 const USO =
   'Uso: URL_BASE=https://... DEMO_PASSWORD=... [REPO=propietario/repositorio] npm run checklist';
 const REPO_POR_DEFECTO = 'donpapaya14/taller-agentes';
@@ -32,38 +29,7 @@ const GRUPOS_DE_DEPENDENCIAS = [
 const RASTROS_DE_LA_PROTECCION_DE_VERCEL = ['vercel.com/login', 'Authentication Required'];
 const MARCA_SIN_RELLENAR = '{{DEMO_PASSWORD}}';
 const FALTA_URL_BASE = 'falta URL_BASE';
-const TIEMPO_MAXIMO_DEL_COMANDO_MS = 10 * 60 * 1000;
-const TIEMPO_MAXIMO_DE_LA_PETICION_MS = 30 * 1000;
-const MEMORIA_MAXIMA_DEL_COMANDO = 16 * 1024 * 1024;
 const LARGO_MAXIMO_DE_UNA_SALIDA = 200;
-
-// Lo único que el checklist toca fuera de sí mismo. Los tests lo sustituyen por uno falso.
-export const sistemaReal = {
-  existe: (ruta) => existsSync(resolve(RAIZ, ruta)),
-  leer: (ruta) => readFileSync(resolve(RAIZ, ruta), 'utf8'),
-  ejecutar(comando, argumentos) {
-    const resultado = spawnSync(comando, argumentos, {
-      cwd: RAIZ,
-      encoding: 'utf8',
-      timeout: TIEMPO_MAXIMO_DEL_COMANDO_MS,
-      maxBuffer: MEMORIA_MAXIMA_DEL_COMANDO,
-    });
-    // Sin código (no existe el comando, o se pasó del tiempo) cuenta como fallo, no como éxito.
-    const salida = [resultado.stdout, resultado.stderr, resultado.error?.message]
-      .filter(Boolean)
-      .join('\n');
-    return { codigo: resultado.status ?? 1, salida };
-  },
-  // Sin seguir las redirecciones: la protección de Vercel responde con un 3xx o un 401, y seguirlo
-  // llevaría a su página de acceso, que contesta 200 y daría un verde falso.
-  async pedir(url) {
-    const respuesta = await fetch(url, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(TIEMPO_MAXIMO_DE_LA_PETICION_MS),
-    });
-    return { estado: respuesta.status, cuerpo: await respuesta.text() };
-  },
-};
 
 const bien = (detalle) => ({ ok: true, detalle });
 const mal = (detalle) => ({ ok: false, detalle });
@@ -79,9 +45,7 @@ function resumenDe(salida) {
 
 const leerPaquete = (sistema) => JSON.parse(sistema.leer('package.json'));
 
-// ---------------------------------------------------------------------------------------------
 // Las comprobaciones: cada una recibe { sistema, urlBase, repo, contrasena } y dice si va bien.
-// ---------------------------------------------------------------------------------------------
 
 function dependeDeNext({ sistema }) {
   const version = leerPaquete(sistema).dependencies?.next;
@@ -193,9 +157,7 @@ function smokeDeProduccion({ sistema, urlBase, contrasena }) {
     : mal(`npm run smoke sale con ${codigo}: ${resumenDe(salida)}`);
 }
 
-// ---------------------------------------------------------------------------------------------
 // Los requisitos, con las palabras de la tabla del SPEC y en su orden.
-// ---------------------------------------------------------------------------------------------
 
 const REQUISITOS = [
   { requisito: 'Proyecto en Next.js', comprobaciones: [dependeDeNext] },
@@ -244,9 +206,7 @@ const REQUISITOS = [
   { requisito: 'No hace falta vídeo', nota: 'no se entrega vídeo' },
 ];
 
-// ---------------------------------------------------------------------------------------------
-// Evaluación, tabla y línea de comandos
-// ---------------------------------------------------------------------------------------------
+// Evaluación, tabla y línea de comandos.
 
 // Una comprobación que se rompe (red caída, herramienta sin instalar) ni da OK ni tumba el resto.
 async function comprobar(comprobacion, contexto) {
