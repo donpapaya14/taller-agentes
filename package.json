@@ -26,7 +26,7 @@
     "gate:cabeceras": "vitest run tests/seguridad/cabeceras.test.ts",
     "smoke": "playwright test tests/e2e/smoke.spec.ts",
     "checklist": "node scripts/checklist-entrega.mjs",
-    "desplegar": "npx vercel@latest pull --yes --environment=production --token=\"$VERCEL_TOKEN\" && npx vercel@latest build --prod --token=\"$VERCEL_TOKEN\" && npx vercel@latest deploy --prebuilt --prod --token=\"$VERCEL_TOKEN\""
+    "desplegar": "npx vercel@65.16.0 pull --yes --environment=production --token=\"$VERCEL_TOKEN\" && npx vercel@65.16.0 build --prod --token=\"$VERCEL_TOKEN\" && npx vercel@65.16.0 deploy --prebuilt --prod --token=\"$VERCEL_TOKEN\""
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -49,7 +49,7 @@
     "@types/node": "20.19.43",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "dependency-cruiser": "18.9.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
@@ -61,6 +61,17 @@
     "prettier": "3.10.1",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
+  },
+  "overrides": {
+    "@stryker-mutator/core": {
+      "minimatch": "11.0.9"
+    },
+    "eslint-plugin-sonarjs": {
+      "minimatch": "11.0.9",
+      "eslint": {
+        "minimatch": "^3.1.5"
+      }
+    }
   }
 }
