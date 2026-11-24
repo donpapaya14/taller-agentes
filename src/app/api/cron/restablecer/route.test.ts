@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { leerEntornoSecreto } from '@/adaptadores/supabase/entorno-secreto';
 import { conPlazoTotal, PLAZO_TOTAL_MS } from '@/adaptadores/supabase/tiempo-limite';
 import { USUARIOS_DEMO } from '@/aplicacion/acceso';
+import { falloDeSupabase } from '../../../../../tests/apoyo/fallos-falsos';
 import { GET } from './route';
 
 const { rpcRestablecer, reponerContrasenas } = vi.hoisted(() => ({
@@ -87,8 +88,8 @@ describe('GET /api/cron/restablecer', () => {
     );
   });
 
-  it('[C-13][D-14] si falla responde 500 con un motivo que se entiende', async () => {
-    rpcRestablecer.mockRejectedValue(new Error('connection refused'));
+  it('[C-13][D-14] si falla con un error de Supabase responde 500 con un motivo que se entiende', async () => {
+    rpcRestablecer.mockRejectedValue(falloDeSupabase('connection refused', '08006'));
 
     const respuesta = await GET(peticion(`Bearer ${SECRETO}`));
 
@@ -204,6 +205,13 @@ describe('GET /api/cron/restablecer: un fallo inesperado', () => {
 
     await expect(respuesta).rejects.toThrow('detalle interno que no debe salir');
     expect(rpcRestablecer).not.toHaveBeenCalled();
+  });
+
+  it('[D-14] un fallo de la base que la aplicación no sabe contar se relanza, no se disfraza de motivo', async () => {
+    rpcRestablecer.mockRejectedValue(new TypeError('x is not a function'));
+
+    await expect(GET(peticion(`Bearer ${SECRETO}`))).rejects.toThrow('x is not a function');
+    expect(reponerContrasenas).not.toHaveBeenCalled();
   });
 
   it('[D-14] un fallo del plazo que no es haberlo vencido tampoco se esconde', async () => {
