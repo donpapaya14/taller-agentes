@@ -291,6 +291,12 @@ describe('módulo de acciones', () => {
   it('[D-4] es un módulo de servidor: la contraseña de demostración no llega al navegador', () => {
     const texto = readFileSync(join(import.meta.dirname, 'acciones.ts'), 'utf8');
 
-    expect(texto.split('\n')[0]).toBe("'use server';");
+    // Stryker antepone un comentario al archivo que instrumenta: la directiva va en la primera línea
+    // que no está vacía ni es un comentario, no en la primera a secas.
+    const primeraDeCodigo = texto
+      .split('\n')
+      .find((linea) => linea.trim() !== '' && !linea.trimStart().startsWith('//'));
+
+    expect(primeraDeCodigo).toBe("'use server';");
   });
 });
