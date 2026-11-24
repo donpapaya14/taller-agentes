@@ -14,3 +14,5 @@ La guarda de umbrales marca como FALLO cualquier cambio en un archivo de configu
 UMBRAL: eslint.config.mjs — paso 16: una regla de lint prohíbe reloj, azar, entorno y red en `src/nucleo` (D-1); endurece una puerta y no relaja ninguna.
 UMBRAL: .github/workflows/gate.yml — paso 16: las acciones van fijadas por SHA y las imágenes de seguridad por versión, y el job `desplegar` instala el navegador del smoke y le pasa `DEMO_PASSWORD`; endurece la cadena de suministro y completa el smoke, sin quitar ni relajar ninguna puerta.
 UMBRAL: package.json#scripts.check:full — paso 16: `check:full` corre `spec:check` al final; añade una puerta y no quita ninguna.
+
+UMBRAL: playwright.config.ts — cierre: una URL_BASE vacía cuenta como ausente (|| en lugar de ??), así el smoke no apunta a una dirección vacía; endurece la configuración y no relaja ninguna puerta.
