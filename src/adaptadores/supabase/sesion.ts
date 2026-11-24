@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
+import { cache } from 'react';
 import { z } from 'zod';
 import { crearClienteServidor } from './cliente-servidor';
 import { leerEntorno } from './entorno';
@@ -43,7 +44,7 @@ async function usuarioActual(cliente: SupabaseClient): Promise<User | null> {
 // entrar de nuevo). Un usuario sin taller o con datos rotos es un error con mensaje: devolver null
 // aquí lo mandaría a /login, y el proxy lo devolvería a /tablero. Lo mismo si la lectura entera
 // pasa del plazo: no se sabe quién es, y el mensaje le dice que lo intente de nuevo.
-export async function leerSesion(): Promise<Sesion | null> {
+async function leerSesionSinMemoria(): Promise<Sesion | null> {
   try {
     return await conPlazoTotal(leerSesionDentroDelPlazo);
   } catch (error) {
@@ -51,6 +52,11 @@ export async function leerSesion(): Promise<Sesion | null> {
     throw error;
   }
 }
+
+// El layout y la página piden la sesión en el mismo render: con `cache` Auth se pregunta una sola
+// vez por petición. Fuera de un render (acciones, rutas) `cache` no guarda nada, así que ninguna
+// sesión pasa de una petición a otra.
+export const leerSesion = cache(leerSesionSinMemoria);
 
 async function leerSesionDentroDelPlazo(plazo: AbortSignal): Promise<Sesion | null> {
   const cliente = await crearClienteServidor(plazo);
