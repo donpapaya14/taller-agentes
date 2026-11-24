@@ -2,29 +2,18 @@
 
 <!-- Tamaño L. GATE 1 y GATE 2 fusionados en un solo OK de Vladys (ver Decisiones). -->
 
-## Petición literal
+## Encargo
 
-Vladys, por orden:
+Resumen de lo que pide la prueba técnica (desarrollo full stack con IA):
 
-- "esta prueba que, la hacemos? tenemos una base de otro proyecto no?"
-- "vale y tu crees que nuestro proceso podria ser el ganador? que crees que podriamos hacer? algo estilo el panel que ya tenemos? porque todo el mundo usara lo mismo y no quiero que saque la misma app"
-- (tras proponerle la app de talleres) "me parece bien, hazlo asi si"
-- (cuentas) "usa mi supabase, no el del trabajo , mi github y y vecel"
-- (diseño) "te pongo fable, para que tengamos el mejor proyecto, y un diseño muy bueno tambien, no quiero el panel generico que tenemos en otro proyecto"
-- (ritmo) "quiero que lo desarrolles cuanto antes si hace falta abrir varios agentes abrelos"
-- (gates) "vale, un solo OK a spec y plan"
-
-Enunciado de la prueba (Speed Paradigm, Desarrollador/a Full Stack con IA):
-
-> Con Claude Code o con Codex, crea un proyecto en Next.js que trabaje con 3 agentes:
-> 1. Orquestador: el agente principal, con su CLAUDE.md (o AGENTS.md), que reparte el trabajo.
-> 2. Develop: un subagente que programa, con su propio .md de cómo programar.
-> 3. Testing: un subagente con un .md de DIRECTRICES que Develop tiene que cumplir. Testing revisa lo que hace Develop y le devuelve los fallos hasta que todo pasa.
->
-> Con ese equipo de agentes, haz una app del tema que quieras (tema libre): con una base de datos gratuita: Firebase o Supabase; publicada gratis en Vercel (o similar).
-> MUY IMPORTANTE: la dirección de la app tiene que ser PÚBLICA. [...] En Vercel, quita la protección en Settings › Deployment Protection (Vercel Authentication) y pásanos la dirección de producción, no la de una vista previa.
-> No hace falta gastar dinero: usa planes gratuitos. No subas claves de API al repositorio. No hace falta vídeo.
-> Al entregar nos pasas: el enlace de la app; el repositorio de GitHub (público o con acceso para nosotros), con los .md de los agentes; un usuario y una contraseña de prueba, si la app tiene login; las respuestas a 4 preguntas cortas.
+- Un proyecto Next.js construido con Claude Code o con Codex por un equipo de tres agentes:
+  1. Orquestador: el agente principal, con su `CLAUDE.md` (o `AGENTS.md`), que reparte el trabajo.
+  2. Develop: un subagente que programa, con su propio `.md` de cómo programar.
+  3. Testing: un subagente con un `.md` de directrices que Develop tiene que cumplir. Revisa lo que hace Develop y le devuelve los fallos hasta que todo pasa.
+- Una app de tema libre con una base de datos gratuita (Firebase o Supabase), publicada gratis en Vercel o similar.
+- La dirección de producción tiene que ser pública, sin la autenticación de Vercel (Settings › Deployment Protection), y no la de una vista previa.
+- Sin gastar dinero (planes gratuitos) y sin claves de API en el repositorio. No hace falta vídeo.
+- Al entregar: el enlace de la app, el repositorio de GitHub (público o con acceso para el equipo) con los `.md` de los agentes, un usuario y una contraseña de prueba si la app tiene login, y las respuestas a cuatro preguntas cortas.
 
 ## Objetivo
 
@@ -33,7 +22,7 @@ Entregar una app pública de gestión para talleres mecánicos (órdenes en tabl
 ## Usuario y contexto
 
 - **Quién lo evalúa**: el equipo técnico de Speed Paradigm. Unos diez minutos por candidato: abre la URL, entra con el usuario de prueba, mira el repo y los `.md` de los agentes.
-- **Para quién es**: personal de Vladys (candidatura). Nada de otros proyectos ni de clientes: ni código, ni cuentas, ni nombres.
+- **Para quién es**: personal de Vladys (candidatura). Nada de código, cuentas ni datos de otros proyectos o clientes.
 - **Usuario ficticio de la app**: el jefe de un taller pequeño y sus mecánicos, que la usan de pie y con el móvil.
 - **Plazo**: cuanto antes, 1 o 2 sesiones, con agentes en paralelo.
 
@@ -84,7 +73,7 @@ Entregar una app pública de gestión para talleres mecánicos (órdenes en tabl
 | P-2 | Los tres agentes viven en el repo: `CLAUDE.md` (orquestador, nombra a `develop` y `testing` y describe cómo reparte), `.claude/agents/develop.md` (cómo se programa, remite a `DIRECTRICES.md`), `.claude/agents/testing.md` + `DIRECTRICES.md`. No dependen de nada de fuera del repo | unit `tests/proceso/agentes.test.ts` con `[P-2]` |
 | P-3 | Cada directriz `D-n` de `DIRECTRICES.md` tiene al menos un test con su ID en verde | `npm run spec:check` sobre `DIRECTRICES.md` + unit `tests/proceso/directrices.test.ts` con `[P-3]` |
 | P-4 | Toda feature marcada `hecha` en `proceso/features.json` tiene rondas numeradas desde 1 sin huecos y la última con veredicto `PASA`; toda ronda `FALLA` lleva al menos un fallo con evidencia o un comando en rojo con su resumen | unit `tests/proceso/rondas.test.ts` con `[P-4]` |
-| P-5 | El historial no contiene secretos ni nombres de clientes o de otros proyectos | manual: `gitleaks git` sin hallazgos (también puerta `secretos` del gate) y búsqueda de términos con la lista que guarda Vladys fuera del repo, antes de hacerlo público |
+| P-5 | El historial no contiene secretos ni nombres de clientes ni de otros proyectos | manual: `gitleaks git` sin hallazgos (también puerta `secretos` del gate) y búsqueda de términos con la lista que guarda Vladys fuera del repo, antes de hacerlo público |
 | P-6 | El `README.md` se lee en tres minutos y contiene: enlace de la app, usuarios de prueba (jefe y mecánico) con su contraseña, cómo trabajan los tres agentes, dónde están las rondas, cómo arrancar en local y la sección «Las cuatro preguntas» | unit `tests/proceso/readme.test.ts` con `[P-6]` |
 | P-7 | La dirección de producción responde sin pedir cuenta de Vercel, el jefe y el mecánico de demostración entran con la contraseña publicada, el mecánico no ve «Entregar» y el jefe del otro taller no ve las matrículas del primero | manual: `npm run smoke` contra producción (`tests/e2e/smoke.spec.ts`, tests `[P-7]`) |
 | P-8 | Todas las features están `hecha` en `proceso/features.json` antes de entregar | manual: `node scripts/entrega-check.mjs` |
@@ -257,7 +246,7 @@ Reglas de honestidad: las rondas no se inventan ni se retocan después. Si Testi
 
 ### Cómo encaja con el flujo de la casa
 
-- La sesión que construye se abre **dentro de** `<raiz-del-repo>`, para que el `CLAUDE.md` del repo sea el del orquestador y `develop` y `testing` aparezcan como tipos de agente. Se lanzan con `model` explícito (columna Modelo del plan).
+- La sesión que construye se abre **dentro del repo**, para que el `CLAUDE.md` del repo sea el del orquestador y `develop` y `testing` aparezcan como tipos de agente. Se lanzan con `model` explícito (columna Modelo del plan).
 - Si esos tipos de agente no están disponibles en la sesión, se lanza `ejecutor-sonnet` con la primera línea «Lee `.claude/agents/develop.md` (o `testing.md`) y trabaja exactamente como dice» y el mismo encargo. El resultado es equivalente y se anota en Decisiones.
 - Los pasos 1, 2, 9, 16 y 17 (montaje, textos de los agentes, infraestructura y entrega) los hace `ejecutor-sonnet` con el contrato de ejecutor de la casa, sin rondas.
 - Antes del GATE 3 pasa el `revisor-adversarial` de la casa. Sus hallazgos bloqueantes entran como una ronda más de la feature afectada, con `"origen": "revision-final"`.
@@ -303,14 +292,14 @@ Next.js, Supabase o Firebase y Vercel los fija el enunciado; lo que se decide es
 - **Vercel Hobby**: lo pide la prueba. Un cron diario (el plan gratuito permite uno al día).
 - **Cadena de suministro**: 8 dependencias de ejecución (`next`, `react`, `react-dom`, `@supabase/ssr`, `@supabase/supabase-js`, `zod`, `pdf-lib`, `server-only`); sin librería de componentes, de iconos, de fechas ni de animación.
 - **Defaults inseguros que se evitan a propósito**: RLS apagado, clave en el cliente, confiar en el proxy para autorizar, clave secreta para consultas normales, registro abierto.
-- **Coste**: 0 €. Cuentas personales verificadas: GitHub `donpapaya14` (repo público: Actions sin coste), Vercel `donpapaya14` / equipo `donpapaya14s-projects` en Hobby (alias `vvlad`), Supabase `donpapaya14's Org` (`<id-organizacion>`; un proyecto en pausa, cabe otro en Free). El plan de la organización se confirma antes de crear el proyecto (paso 9).
+- **Coste**: 0 €. Cuentas personales verificadas: GitHub `donpapaya14` (repo público: Actions sin coste), Vercel en el plan Hobby y Supabase en la organización personal (un proyecto en pausa, cabe otro en Free). El plan de la organización se confirma antes de crear el proyecto (paso 9).
 
 ## Despliegue
 
 - **Entornos**: un solo proyecto de Supabase en la nube (`taller-agentes`), que es a la vez la demostración pública y la base contra la que se desarrolla; no contiene datos reales y se restablece. El E2E del gate completo corre contra un Supabase local levantado en el runner de GitHub.
 - **despliegue**: Actions → Gate → Run workflow con «desplegar» marcado, desde `main`. El job `desplegar` ejecuta `npm run desplegar` (`vercel pull` + `vercel build --prod` + `vercel deploy --prebuilt --prod` con el token de la cuenta personal). Las migraciones se aplican antes con `supabase db push` desde local.
 - **smoke**: `URL_BASE=https://<producción> npm run smoke`.
-- **rollback**: `vercel rollback --token=$VERCEL_TOKEN_VLADYS` al despliegue anterior. Base de datos: `restablecer_demo()`.
+- **rollback**: `vercel rollback --token="$VERCEL_TOKEN"` al despliegue anterior. Base de datos: `restablecer_demo()`.
 - **GATE 3 en dos tiempos**: (a) OK de Vladys a publicar (repo público y despliegue a producción); (b) con producción arriba, `npm run checklist` recorre la tabla «Cumplimiento del enunciado» y Vladys da el OK a enviar la candidatura con ese informe delante.
 
 ## Supuestos
@@ -364,25 +353,25 @@ Testing corre siempre en `sonnet`. Oleada 2: cinco ramas a la vez (3, 4, 5, 6→
 #### Paso 1: Esqueleto Next, puertas, dependencias y scripts
 
 - **Cierra:** P-1, P-9
-- **Archivos** (todos nuevos, en `<raiz-del-repo>`; se trabaja en `main`, sin copia aparte):
+- **Archivos** (todos nuevos, en la raíz del repo; se trabaja en `main`, sin copia aparte):
   - lo que genera `create-next-app` (`package.json`, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs`, `postcss.config.mjs`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `.gitignore`)
   - `calidad.json`, `.dependency-cruiser.cjs`, `knip.json`, `vitest.config.ts`, `stryker.config.mjs`, `playwright.config.ts`, `.nvmrc`, `.editorconfig`, `.prettierrc.json`, `.gitleaks.toml`, `.env.example`, `vercel.json`
   - `scripts/puertas/**`, `.github/workflows/gate.yml`, `.github/dependabot.yml` (copias)
   - `tests/proceso/puertas.test.ts`, `tests/proceso/enunciado.test.ts`, `README.md` (provisional), `DECISIONES.md`
 - **Contexto que necesitas** (ya investigado):
   - El repo existe con `git init -b main`, autor local configurado y `docs/SPEC.md`. A la vez que tú, otro agente escribe `CLAUDE.md`, `.claude/agents/*`, `DIRECTRICES.md` y `proceso/*`: no los toques ni los añadas a tu commit.
-  - Plantilla de puertas: `<plantilla-de-puertas>/` (`scripts/` con 6 `.mjs` y `lib/puerta.mjs`; `.github/workflows/gate.yml`, 185 líneas; `.github/dependabot.yml`). Guía: `ADOPTAR.md` en esa carpeta, secciones 1 a 5.
-  - Configs que se imitan: `../proyecto-previo/eslint.config.js:25-47` (límites leídos de `calidad.json`), `../proyecto-previo/.dependency-cruiser.cjs:6-36`, `../proyecto-previo/stryker.config.mjs:15-57`, `../proyecto-previo/vitest.config.js:9-27`, y los scripts `cobertura`, `duplicado`, `muerto`, `puertas` de `../proyecto-previo/package.json`.
+  - Plantilla de puertas de la casa (`scripts/` con 6 `.mjs` y `lib/puerta.mjs`; `.github/workflows/gate.yml`, 185 líneas; `.github/dependabot.yml`) y su guía de adopción, secciones 1 a 5.
+  - Configs que se imitan, de un proyecto anterior del autor: el bloque de límites de eslint (leídos de `calidad.json`), `.dependency-cruiser.cjs`, `stryker.config.mjs`, `vitest.config.js` y los scripts `cobertura`, `duplicado`, `muerto` y `puertas` de su `package.json`.
   - Los hooks globales de git corren `npm run check` en cada commit y `npm run check:full` en cada push.
   - `scripts/puertas/spec-check.mjs` trata como criterio toda fila de tabla cuya primera celda sea un ID; hasta el paso 16 daría SIN TEST. Por eso `spec:check` existe pero **no** entra en `check:full` todavía.
   - `gate.yml`, paso «puertas gate:<id>» (líneas 131-142 de la plantilla): corre `npm run gate:<id>` si el script existe.
 - **Contrato exacto:**
-  - Generar con `npx create-next-app@16.4.6 <dir> --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --yes`. Si se niega porque el directorio no está vacío, generar en `<carpeta-temporal>/next-base` y mover el contenido (sin `.git`) al repo.
+  - Generar con `npx create-next-app@16.4.6 <dir> --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --yes`. Si se niega porque el directorio no está vacío, generar en un directorio temporal vacío, fuera del repo, y mover el contenido (sin `.git`) al repo.
   - Dependencias, versiones exactas (sin `^`). Ejecución: `next` 16.4.6, `react` y `react-dom` 19.3.1, `@supabase/supabase-js` 2.119.2, `@supabase/ssr` 0.12.7, `zod` 4.6.7, `pdf-lib` 1.17.1, `server-only` (última). Desarrollo: `typescript` última 6.0.x (`npm view typescript@6.0 version`), `vitest` 4.1.11, `@vitest/coverage-v8` 4.1.11, `@stryker-mutator/core` y `@stryker-mutator/vitest-runner` 10.1.1, `eslint-plugin-sonarjs` 4.2.2, `dependency-cruiser` 18.9.0, `knip` 6.48.0, `jscpd` 5.4.3, `fast-check` 4.11.0, `@testing-library/react` 16.3.3, `jsdom` 31.0.1, `@electric-sql/pglite` 0.6.0, `@playwright/test` 1.65.1, `@axe-core/playwright` 4.14.0, `prettier` (última). `.nvmrc`: `24`.
-  - `calidad.json`: `tipo: "web"`, `supabase: true`, `limites` de `ADOPTAR.md` sección 2, `mutacion: { "break": 80, "rutas": ["src/nucleo/**/*.ts"] }`, `omitir` con `dast`, `lighthouse`, `enlaces`, `carga` y los motivos de la sección «Tipo y puertas».
-  - Scripts de `package.json`: `dev`, `build`, `start`, `lint` (`eslint .`), `tipos` (`tsc --noEmit`), `test` (`vitest run`), `check` (`npm run lint && npm run tipos && npm test`), `cobertura` (como proyecto-previo, dejando `reports/vitest.json`), `arquitectura` (`depcruise src --config .dependency-cruiser.cjs`), `duplicado`, `muerto`, `puertas` (como proyecto-previo, con `origin/main` y caída al primer commit), `spec:check` (`node scripts/puertas/spec-check.mjs --specs DIRECTRICES.md --vitest reports/vitest.json --no-escribir`), `check:full` (`npm run check && npm run cobertura && npm run arquitectura && npm run puertas`), `gate:tipos` (`npm run tipos`), `gate:rls` (`vitest run tests/bd`), `gate:mutacion` (`stryker run --concurrency 4`), `e2e` (`playwright test tests/e2e/movil.spec.ts`), `gate:e2e` y `gate:a11y` (`npm run e2e`), `gate:cabeceras` (`vitest run tests/seguridad/cabeceras.test.ts`), `smoke` (`playwright test tests/e2e/smoke.spec.ts`), `checklist` (`node scripts/checklist-entrega.mjs`), `desplegar` (`npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN" && npx vercel@latest build --prod --token="$VERCEL_TOKEN" && npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"`).
+  - `calidad.json`: `tipo: "web"`, `supabase: true`, `limites` de la sección 2 de la guía de adopción de las puertas, `mutacion: { "break": 80, "rutas": ["src/nucleo/**/*.ts"] }`, `omitir` con `dast`, `lighthouse`, `enlaces`, `carga` y los motivos de la sección «Tipo y puertas».
+  - Scripts de `package.json`: `dev`, `build`, `start`, `lint` (`eslint .`), `tipos` (`tsc --noEmit`), `test` (`vitest run`), `check` (`npm run lint && npm run tipos && npm test`), `cobertura` (como en el proyecto anterior, dejando `reports/vitest.json`), `arquitectura` (`depcruise src --config .dependency-cruiser.cjs`), `duplicado`, `muerto`, `puertas` (como en el proyecto anterior, con `origin/main` y caída al primer commit), `spec:check` (`node scripts/puertas/spec-check.mjs --specs DIRECTRICES.md --vitest reports/vitest.json --no-escribir`), `check:full` (`npm run check && npm run cobertura && npm run arquitectura && npm run puertas`), `gate:tipos` (`npm run tipos`), `gate:rls` (`vitest run tests/bd`), `gate:mutacion` (`stryker run --concurrency 4`), `e2e` (`playwright test tests/e2e/movil.spec.ts`), `gate:e2e` y `gate:a11y` (`npm run e2e`), `gate:cabeceras` (`vitest run tests/seguridad/cabeceras.test.ts`), `smoke` (`playwright test tests/e2e/smoke.spec.ts`), `checklist` (`node scripts/checklist-entrega.mjs`), `desplegar` (`npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN" && npx vercel@latest build --prod --token="$VERCEL_TOKEN" && npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"`).
   - `.dependency-cruiser.cjs`: una regla por línea de «Dependencias prohibidas» de la sección Arquitectura, más `sin-ciclos`; `exclude: '^scripts/puertas/'`; `tsConfig` apuntando a `tsconfig.json`.
-  - `eslint.config.mjs`: lo generado por Next + `sonarjs.configs.recommended` + el bloque de límites de proyecto-previo aplicado a `**/*.{ts,tsx,mjs}`; `ignores`: `.next/**`, `coverage/**`, `reports/**`, `.stryker-tmp/**`, `scripts/puertas/**`. En `error`: `no-empty`, `no-console`, `@typescript-eslint/no-explicit-any`, `react/no-danger`.
+  - `eslint.config.mjs`: lo generado por Next + `sonarjs.configs.recommended` + el bloque de límites de la plantilla aplicado a `**/*.{ts,tsx,mjs}`; `ignores`: `.next/**`, `coverage/**`, `reports/**`, `.stryker-tmp/**`, `scripts/puertas/**`. En `error`: `no-empty`, `no-console`, `@typescript-eslint/no-explicit-any`, `react/no-danger`.
   - `vitest.config.ts`: entorno `node` por defecto y `jsdom` para `**/*.test.tsx`; `include`: `src/**/*.test.{ts,tsx}`, `tests/**/*.test.ts`; `exclude`: `tests/e2e/**`; cobertura v8 sobre `src/**` (sin tests, sin `src/app/**/layout.tsx`, `loading.tsx`, `error.tsx`), umbrales `lines: 80, branches: 75`; `passWithNoTests: false`; alias `@` → `src`.
   - `playwright.config.ts`: `baseURL` de `URL_BASE` (por defecto `http://127.0.0.1:3000`); proyectos `movil` (390×844) y `escritorio` (1440×900); reporter `json` a `reports/playwright.json` más `list`; `webServer` (`npm run build && npm run start`) solo si no hay `URL_BASE`.
   - `.env.example` (solo nombres): `SUPABASE_URL=`, `SUPABASE_PUBLISHABLE_KEY=`, `SUPABASE_SECRET_KEY=`, `CRON_SECRET=`, `DEMO_PASSWORD=`.
@@ -496,7 +485,7 @@ Testing corre siempre en `sonnet`. Oleada 2: cinco ramas a la vez (3, 4, 5, 6→
   | `[C-17][D-12] ningún texto por debajo de 14 px` | `src/**/*.{css,tsx}` | ningún `font-size` menor de `0.875rem` o `14px`; no se usa `text-xs` |
 - **Cambio:** tests → tokens y fuentes → `Matricula`, `Boton`, `EstadoVacio`, iconos SVG → `Tablero` y `TarjetaOrden` (escritorio: 4 columnas; móvil: selector fijo y una columna) → atmósfera en `globals.css` → `/muestra` → ronda de Testing.
 - **No hacer:** librerías de componentes, iconos o animación; `style` con valores de color; otras pantallas; navegación definitiva (paso 12).
-- **Verificación:** `npm run check:full` → 0. La sesión principal (no el agente): comprueba el puerto 3000, lanza `npm run dev` en segundo plano en la copia de trabajo, captura `/muestra` a 1440×900 y 390×844 en `docs/diseno/tablero-escritorio.png` y `docs/diseno/tablero-movil.png`, corre `bash <detector-de-diseño-generico> src` (debe dar PASA) y para el servidor.
+- **Verificación:** `npm run check:full` → 0. La sesión principal (no el agente): comprueba el puerto 3000, lanza `npm run dev` en segundo plano en la copia de trabajo, captura `/muestra` a 1440×900 y 390×844 en `docs/diseno/tablero-escritorio.png` y `docs/diseno/tablero-movil.png`, corre el detector anti-genérico de la casa sobre `src` (debe dar PASA) y para el servidor.
 - **Gate de diseño (sesión principal):** rúbrica de impacto ≥ 13/16 sin ningún 0, enseñar a Vladys las dos capturas y la tabla; sin su OK no se lanza el paso 12. Los cambios que pida vuelven a Develop como ronda nueva de `f01-sistema-visual`.
 - **Para y devuelve ABIERTO si:** un token no llega a AA sin perder el carácter; `next/font` no encuentra alguna familia; el tablero en móvil necesita más JavaScript de cliente que el selector de columna.
 
@@ -888,12 +877,12 @@ Cambio de contrato decidido por el arquitecto, no hallazgo de Testing: Develop l
 - **Cierra:** P-10 (parte: plan Free), amenaza «Alta de usuarios»
 - **Archivos:** `.env.local` — crear en local, **nunca** al repo; `scripts/comprobar-nube.mjs` — crear (versionado, sin claves).
 - **Contexto que necesitas:**
-  - El CLI de Supabase tiene sesión en la organización personal `donpapaya14's Org`, id `<id-organizacion>`. Tiene un proyecto en pausa (`<proyecto-en-pausa>`) que no se toca. **Nunca** otra organización.
+  - El CLI de Supabase tiene sesión en la organización personal de `donpapaya14`. Tiene un proyecto en pausa que no se toca. Solo esa organización: ninguna otra.
   - En `main` ya están integradas las cuatro migraciones (`supabase/migrations/2026112300000{1,2,3,4}_*.sql`), `supabase/config.toml` con `enable_signup = false` y `scripts/crear-usuarios-demo.mjs`.
   - Crear un proyecto en una organización de pago cuesta dinero cada mes; en Free, nada.
 - **Contrato exacto**, en este orden:
-  1. Confirmar el plan: `supabase orgs list -o json` y, si no trae el plan, consultar `GET https://api.supabase.com/v1/organizations/<id-organizacion>` con el token del CLI. Tiene que decir `free`. Si dice otra cosa o no se puede saber: **parar** y ABIERTO.
-  2. `supabase projects create taller-agentes --org-id <id-organizacion> --region eu-west-1 --db-password "<openssl rand -base64 24>"`. La contraseña va solo a `.env.local` como `SUPABASE_DB_PASSWORD`.
+  1. Confirmar el plan: `supabase orgs list -o json` y, si no trae el plan, consultar `GET https://api.supabase.com/v1/organizations/<id-de-la-organización>` con el token del CLI. Tiene que decir `free`. Si dice otra cosa o no se puede saber: **parar** y ABIERTO.
+  2. `supabase projects create taller-agentes --org-id <id-de-la-organización> --region eu-west-1 --db-password "<openssl rand -base64 24>"`. La contraseña va solo a `.env.local` como `SUPABASE_DB_PASSWORD`.
   3. `supabase link --project-ref <ref>` → `supabase db push` → `supabase config push`.
   4. `supabase projects api-keys --project-ref <ref>` → `.env.local` con `SUPABASE_URL=https://<ref>.supabase.co`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `CRON_SECRET=<openssl rand -hex 32>`, `DEMO_PASSWORD=<palabras legibles + cifras, 16 caracteres o más, p. ej. foso-taller-2026-demo>`.
   5. `node --env-file=.env.local scripts/crear-usuarios-demo.mjs`.
@@ -1039,7 +1028,7 @@ Requiere el OK de Vladys al gate de diseño.
   - SPEC, «Diseño → Pantallas», puntos 1 y 6. Sistema visual hecho: `src/ui/tokens.css`, `src/ui/fuentes.ts`, `src/ui/Boton.tsx` (`variante`), `src/ui/EstadoVacio.tsx` (`texto`), `src/ui/iconos.tsx`.
   - `src/adaptadores/proceso/leer-rondas.ts`: `leerProceso(directorio)`, `resumir(features)`, tipo `FeatureConRondas` (feature + `rondas: Ronda[]`; cada `Ronda` con `ronda`, `veredicto`, `fallos[]`, `commitRevisado`, `fecha`).
   - `src/adaptadores/supabase/sesion.ts`: `leerSesion()`; `cliente-servidor.ts`: `crearClienteServidor()`; `src/aplicacion/acceso.ts`: `USUARIOS_DEMO`; `entorno.ts`: `leerEntornoSecreto().demoPassword`.
-  - `.env.local` con las claves del proyecto en la nube (cópialo a tu copia de trabajo desde `<raiz-del-repo>/.env.local`).
+  - `.env.local` con las claves del proyecto en la nube (cópialo a tu copia de trabajo desde el repo principal).
 - **Contrato exacto:**
   ```ts
   // src/app/login/acciones.ts  ('use server')
@@ -1164,7 +1153,7 @@ Requiere el OK de Vladys al gate de diseño.
 - **Contexto que necesitas:**
   - `package.json`: `spec:check` hoy es `node scripts/puertas/spec-check.mjs --specs DIRECTRICES.md --vitest reports/vitest.json --no-escribir` y no está en `check:full`.
   - `docs/SPEC.md` (tablas «Criterios de aceptación», «Criterios de proceso», «Cumplimiento del enunciado») y `DIRECTRICES.md` terminan con los dos comentarios HTML `estado:inicio` y `estado:fin`, entre los que `spec-check` escribe.
-  - GitHub: la cuenta es `donpapaya14`; la sesión activa de `gh` es otra. Antes: `gh auth switch -u donpapaya14`. Al acabar: `gh auth switch -u <cuenta-anterior>` (dejarla como estaba).
+  - GitHub: la cuenta es `donpapaya14`. Antes de crear el repositorio, `gh auth status` tiene que mostrarla como activa; si no, `gh auth switch -u donpapaya14`, y al acabar se deja la sesión como estaba.
   - Todas las features están `hecha` y sus ramas integradas en `main`.
 - **Contrato exacto:**
   - `package.json`: `spec:check` → `node scripts/puertas/spec-check.mjs --specs docs/SPEC.md,DIRECTRICES.md --vitest reports/vitest.json`; `check:full` → añade al final `&& npm run spec:check`.
@@ -1189,23 +1178,23 @@ Requiere: revisor adversarial sin bloqueantes abiertos y OK de Vladys a publicar
 - **Cierra:** P-5, P-7, P-10, P-11
 - **Archivos:** `README.md`, `docs/ENTREGA.md` — modificar solo la URL de producción si no es la prevista. Ninguno más.
 - **Contexto que necesitas:**
-  - Vercel: cuenta personal, alias de shell `vvlad` (equivale a `vercel --token=$VERCEL_TOKEN_VLADYS`), equipo `donpapaya14s-projects` (Hobby). **Nunca** otra cuenta ni la sesión de equipo.
+  - Vercel: cuenta personal en el plan Hobby, siempre con su token en `VERCEL_TOKEN` (`vercel --token="$VERCEL_TOKEN"`); ninguna otra cuenta ni equipo.
   - Un proyecto creado por CLI puede quedar con el preset «Other» y dar 404 en todo: `vercel.json` ya lleva `"framework": "nextjs"`. Un despliegue puede quedar en `BLOCKED` por el autor del commit: se ve con `--debug`, campo `readyStateReason`.
   - `.env.local` tiene los valores de `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `CRON_SECRET`, `DEMO_PASSWORD`.
   - `gate.yml`, job `desplegar`: usa el entorno `produccion` con los secretos `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` y la variable `URL_PRODUCCION`.
 - **Contrato exacto**, en este orden:
   1. `gitleaks git --no-banner` sobre todo el historial → sin hallazgos. Búsqueda de términos privados con la lista que la sesión principal pasa desde fuera del repo → sin resultados.
-  2. `gh auth switch -u donpapaya14`. `vvlad link --yes --project taller-agentes` (crea el proyecto en la cuenta personal). Leer `orgId` y `projectId` de `.vercel/project.json`.
-  3. Variables de producción en Vercel (`vvlad env add <NOMBRE> production` para las cinco).
+  2. `gh auth status` con `donpapaya14` activa (si no, `gh auth switch -u donpapaya14`). `vercel link --yes --project taller-agentes --token="$VERCEL_TOKEN"` (crea el proyecto en la cuenta personal). Leer `orgId` y `projectId` de `.vercel/project.json`.
+  3. Variables de producción en Vercel (`vercel env add <NOMBRE> production --token="$VERCEL_TOKEN"` para las cinco).
   4. En GitHub: entorno `produccion` con los tres secretos y la variable `URL_PRODUCCION` (`gh secret set … --env produccion`, `gh variable set URL_PRODUCCION --env produccion`).
   5. `gh workflow run gate.yml -f desplegar=true --ref main` → esperar → gate completo en verde y job `desplegar` terminado.
   6. `gh repo edit donpapaya14/taller-agentes --visibility public --accept-visibility-change-consequences`.
   7. `URL_BASE=<producción> REPO=donpapaya14/taller-agentes DEMO_PASSWORD=… npm run checklist` → pegar la tabla entera.
-  8. `gh auth switch -u <cuenta-anterior>`.
+  8. Dejar la sesión de `gh` como estaba al empezar.
 - **Tests primero:** no aplica; el checklist y el smoke son la prueba.
 - **No hacer:** `vercel deploy --prod` desde local; hacer público el repo antes del punto 1; contestar las cuatro preguntas sin haberlas leído; tocar Deployment Protection por CLI si la URL de producción ya responde sin sesión.
 - **Verificación:** tabla del checklist sin ningún `FALLO`; abrir la URL de producción en una ventana privada → carga sin pedir cuenta de Vercel; las filas `A MANO` (plan Free, plan Hobby, facturación en 0, Deployment Protection) las confirma la sesión principal con Vladys mirando los paneles.
-- **Para y devuelve ABIERTO si:** el despliegue queda en `BLOCKED`; la URL de producción pide autenticación de Vercel (Vladys la quita en Settings → Deployment Protection); el gate completo falla en una puerta; `vvlad` no está en la cuenta `donpapaya14`.
+- **Para y devuelve ABIERTO si:** el despliegue queda en `BLOCKED`; la URL de producción pide autenticación de Vercel (Vladys la quita en Settings → Deployment Protection); el gate completo falla en una puerta; el token de Vercel no es de la cuenta `donpapaya14`.
 
 Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la candidatura.
 
@@ -1254,7 +1243,7 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - [x] Cada paso se puede ejecutar leyendo su bloque y las secciones del SPEC que cita.
 - [x] Ningún paso contiene verbos vagos.
 - [x] Nombres, rutas, firmas, textos y valores están escritos. Excepción declarada: la composición visual del paso 3 y la redacción de los `.md` del paso 2, por eso van en opus.
-- [x] Las referencias a archivos existentes (plantilla de puertas, configs de proyecto-previo, `spec-check.mjs`, `gate.yml`) se abrieron en esta sesión. Las rutas dentro del repo son de archivos que crean pasos anteriores.
+- [x] Las referencias a archivos existentes (plantilla de puertas, configs de un proyecto anterior, `spec-check.mjs`, `gate.yml`) se abrieron en esta sesión. Las rutas dentro del repo son de archivos que crean pasos anteriores.
 - [x] Cada test tiene entrada y resultado concretos.
 - [x] Todo criterio tiene paso y todo paso cierra algún criterio.
 - [ ] Un paso ≤ 5 archivos: **no se cumple** en los pasos 1, 3, 8, 10, 12 y 13 (esqueleto e interfaz crean muchos archivos pequeños). Se acepta porque cada uno tiene un solo objetivo; si un ejecutor se queda corto, el arquitecto parte ese paso.
@@ -1278,7 +1267,7 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 - 2026-11-23 (paso 6) `not null` en todas las columnas que el modelo da por obligatorias, `default 0` en stock y stock mínimo, y `check` de precio por hora no negativo. Paso 6b.
 - 2026-11-23 (paso 6) Ratificado: el arnés de PGlite reproduce los permisos por defecto de Supabase antes de migrar; la migración retira todo a `authenticated` y concede solo lo que usan las políticas; `await` de nivel superior en los tests de base de datos.
 - 2026-11-23 (paso 6) El paso 9 comprueba los permisos contra la nube con `scripts/comprobar-nube.mjs` (solo clave publicable y usuarios de demostración): PGlite no reproduce que `postgres` no sea superusuario en Supabase.
-- 2026-11-23 App nueva desde cero, sin código de otros proyectos.
+- 2026-11-23 App nueva desde cero, sin código de proyectos anteriores.
 - 2026-11-23 Todo el acceso a datos en el servidor, sin cliente de Supabase en el navegador (ninguna clave en el cliente; descartado: consultas desde componentes de cliente).
 - 2026-11-23 El aislamiento y los roles se deciden en Postgres (RLS + `cerrar_orden`), no en el servidor de Next (descartado: filtrar por `taller_id` con la clave secreta).
 - 2026-11-23 Políticas y funciones SQL probadas con PGlite dentro de vitest (rápido, sin Docker, entra en `check:full`; descartado en local: `supabase start` + pgTAP).
