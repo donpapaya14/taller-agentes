@@ -86,7 +86,7 @@ function conUsuarioYRespuesta(respuesta: RespuestaDeLaConsulta) {
   const consulta = consultaQueDa(respuesta);
   const from = vi.fn(() => consulta);
   const getUser = async () => ({ data: { user: { id: ID_USUARIO } }, error: null });
-  return { from, eq: consulta.eq, retry: consulta.retry, auth: { getUser } };
+  return { from, ...consulta, auth: { getUser } };
 }
 
 afterEach(() => {
@@ -116,6 +116,22 @@ describe('leerSesion', () => {
     });
     expect(cliente.from).toHaveBeenCalledWith('miembros');
     expect(cliente.eq).toHaveBeenCalledWith('usuario_id', ID_USUARIO);
+  });
+
+  it('[C-3] un mecánico entra con su rol', async () => {
+    const fila = { ...FILA, rol: 'mecanico' };
+    crearClienteServidor.mockResolvedValue(conUsuarioYRespuesta({ data: fila, error: null }));
+
+    expect((await leerSesion())?.rol).toBe('mecanico');
+  });
+
+  it('pide a miembros el taller, el rol, el nombre y el nombre del taller', async () => {
+    const cliente = conUsuarioYRespuesta({ data: FILA, error: null });
+    crearClienteServidor.mockResolvedValue(cliente);
+
+    await leerSesion();
+
+    expect(cliente.select).toHaveBeenCalledWith('taller_id, rol, nombre, talleres(nombre)');
   });
 
   it.each(Object.entries(FILAS_BASURA))('[D-2] rechaza una fila con %s', async (_, fila) => {
