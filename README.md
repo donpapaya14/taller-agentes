@@ -35,6 +35,8 @@ En `/login`, «Entrar como jefe» y «Entrar como mecánico» entran sin escribi
 | Develop     | `.claude/agents/develop.md`                    | Escribe los tests, los ve fallar e implementa. Entrega un informe VERIFICADO / ABIERTO / SIN COMPROBAR                          |
 | Testing     | `.claude/agents/testing.md` y `DIRECTRICES.md` | Revisa sin ver lo que dijo Develop: lee el diff y las directrices, corre los comandos, busca el caso que rompe. No edita código |
 
+Develop y Testing se lanzaron como subagentes de Claude Code a los que se les dijo que leyeran `.claude/agents/develop.md` o `.claude/agents/testing.md`; esos archivos son su contrato.
+
 El protocolo de ronda, para cada feature:
 
 1. Encargo: el orquestador lanza a Develop con el bloque del paso; tests primero, `npm run check` en verde y commit.
@@ -90,10 +92,10 @@ Lo que cada capa no puede importar lo impone `.dependency-cruiser.cjs` (test `[D
 ## Arrancar en local
 
 ```
-nvm use                                # Node 24, el de .nvmrc
+nvm use                                                     # Node 24, el de .nvmrc
 npm ci
-cp .env.example .env.local             # SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, CRON_SECRET, DEMO_PASSWORD
-node scripts/crear-usuarios-demo.mjs   # los tres usuarios y los datos de la demo
+cp .env.example .env.local                                  # SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, CRON_SECRET, DEMO_PASSWORD
+node --env-file=.env.local scripts/crear-usuarios-demo.mjs  # los tres usuarios y los datos de la demo
 npm run dev
 ```
 
@@ -104,7 +106,8 @@ La base de datos sale de `supabase/migrations`: con Docker, `supabase start` y `
 - Sin IA dentro de la app ni servicios de pago; sin registro público: los usuarios son los de la demostración.
 - Sin pantallas de clientes y vehículos (se crean dentro de «Nueva orden»), sin arrastrar y soltar (la orden avanza con un botón), sin agenda, informes, exportaciones, modo sin conexión ni varios idiomas.
 - La factura no tiene validez fiscal. WhatsApp solo abre `wa.me` con el mensaje escrito; no envía.
-- No registra la causa de los fallos esperados: la regla `no-console` está activa y relajarla exige una línea `UMBRAL:` autorizada en el SPEC. Los inesperados se relanzan y los registra Vercel; los esperados llegan al usuario con un motivo en español.
+- No registra la causa de los fallos esperados: la regla `no-console` está activa y relajarla exige una línea `UMBRAL:` autorizada en el SPEC. En el cron, el PDF y «Restablecer la demo» solo se cuentan con un motivo en español los fallos esperados (errores de Supabase con código y de validación); los demás los relanzan y los registra Vercel. Las acciones que escriben (tablero, orden, nueva orden y recambios) capturan cualquier fallo y lo cuentan con un motivo en español, sin registrarlo.
+- «Restablecer la demo» es público (cualquiera puede reiniciarla, como mucho una vez cada 10 minutos); los listados no se paginan.
 - El PDF usa la fuente estándar Helvetica: una letra fuera de Latin-1 (cirílico, `ł`) sale como «?».
 
 ## Las cuatro preguntas

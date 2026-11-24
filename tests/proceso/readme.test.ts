@@ -80,6 +80,38 @@ describe('README', () => {
   });
 });
 
+describe('README: lo que cuenta con honestidad', () => {
+  const readme = leer('README.md');
+
+  // El script lee `process.env` y nada más: sin cargar `.env.local` falla por una variable que falta.
+  it('[P-6] el comando que crea los usuarios carga el entorno', () => {
+    const arrancar = seccionDe(readme, 'Arrancar en local')?.texto ?? '';
+
+    expect(arrancar).toContain('node --env-file=.env.local scripts/crear-usuarios-demo.mjs');
+  });
+
+  it('[P-6] dice cómo se lanzaron Develop y Testing', () => {
+    const agentes = seccionDe(readme, 'Los tres agentes')?.texto ?? '';
+
+    expect(agentes).toContain('subagentes de Claude Code a los que se les dijo que leyeran');
+    expect(agentes).toContain('`.claude/agents/develop.md` o `.claude/agents/testing.md`');
+  });
+
+  it('[P-6] avisa de que restablecer la demo es público y de que los listados no se paginan', () => {
+    const limites = seccionDe(readme, 'Qué no hace')?.texto ?? '';
+
+    expect(limites).toContain('«Restablecer la demo» es público');
+    expect(limites).toContain('los listados no se paginan');
+  });
+
+  it('[P-6] distingue los fallos que relanza de los que cuenta sin registrar', () => {
+    const limites = seccionDe(readme, 'Qué no hace')?.texto ?? '';
+
+    expect(limites).toContain('los relanzan y los registra Vercel');
+    expect(limites).toContain('capturan cualquier fallo');
+  });
+});
+
 describe('entrega', () => {
   it.each(['README.md', 'docs/ENTREGA.md'])('[P-6] %s reserva las cuatro preguntas', (archivo) => {
     const preguntas = seccionDe(leer(archivo), /cuatro preguntas/i);
