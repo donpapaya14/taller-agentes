@@ -1,7 +1,7 @@
 import { main } from '../../scripts/checklist-entrega.mjs';
 
 export const REPO = 'donpapaya14/taller-agentes';
-export const URL_BASE = 'https://taller-agentes.vercel.app';
+export const URL_BASE = 'https://foso-taller.vercel.app';
 export const CONTRASENA = 'clave-de-prueba';
 const ARCHIVOS_DE_LOS_AGENTES = [
   'CLAUDE.md',

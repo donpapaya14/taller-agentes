@@ -21,6 +21,7 @@ const TITULOS_DEL_README = [
 
 const MAXIMO_DE_LINEAS_DEL_README = 130;
 const CAPTURA_DEL_TABLERO = 'docs/diseno/tablero-escritorio.png';
+const DIRECCION_DE_PRODUCCION = 'https://foso-taller.vercel.app';
 
 const leer = (relativa: string) => readFileSync(resolve(raiz, relativa), 'utf8');
 
@@ -126,6 +127,16 @@ describe('entrega', () => {
     expect(preguntas).toBeDefined();
     expect(numerosDeLista(preguntas?.texto ?? '')).toEqual([1, 2, 3, 4]);
   });
+
+  // La dirección de producción es una sola, y es la misma en lo que se lee y en lo que se envía.
+  it.each(['README.md', 'docs/ENTREGA.md'])(
+    '[P-6] %s da la dirección de producción definitiva y ninguna otra',
+    (archivo) => {
+      expect(leer(archivo).match(/https:\/\/[\w-]+\.vercel\.app/g)).toEqual([
+        DIRECCION_DE_PRODUCCION,
+      ]);
+    },
+  );
 
   it('[P-6] el README deja las cuatro preguntas como pendientes', () => {
     const preguntas = seccionDe(leer('README.md'), 'Las cuatro preguntas')?.texto ?? '';

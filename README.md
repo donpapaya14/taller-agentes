@@ -10,7 +10,7 @@ Es la entrega de una prueba técnica de desarrollo full stack con IA: una app Ne
 
 ## Probarla
 
-https://taller-agentes.vercel.app
+https://foso-taller.vercel.app
 
 | Correo                        | Rol      | Taller          | Contraseña          |
 | ----------------------------- | -------- | --------------- | ------------------- |

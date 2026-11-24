@@ -10,7 +10,7 @@ Hola,
 
 Os paso la entrega:
 
-- **Aplicación (producción, pública):** https://taller-agentes.vercel.app
+- **Aplicación (producción, pública):** https://foso-taller.vercel.app
 - **Repositorio:** https://github.com/donpapaya14/taller-agentes, con los `.md` de los agentes: `CLAUDE.md`, `.claude/agents/develop.md`, `.claude/agents/testing.md` y `DIRECTRICES.md`.
 - **Usuarios de prueba**, los tres con la contraseña `{{DEMO_PASSWORD}}`:
 

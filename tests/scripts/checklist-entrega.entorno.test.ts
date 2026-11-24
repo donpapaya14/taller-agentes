@@ -75,7 +75,7 @@ describe('checklist de entrega: un entorno mal formado', () => {
     },
   );
 
-  it.each(['taller-agentes.vercel.app', 'file:///srv/taller', 'no es una dirección'])(
+  it.each(['foso-taller.vercel.app', 'file:///srv/taller', 'no es una dirección'])(
     'una URL_BASE como «%s» es un error de uso: sale con 2 y no lanza nada',
     async (urlBase) => {
       const entorno = { ...ENTORNO_COMPLETO, URL_BASE: urlBase };
