@@ -7,6 +7,11 @@ const RIBERA = '00000000-0000-4000-8000-00000000000b';
 const ENTREGAR = 'select public.cerrar_orden($1) as numero';
 const MATRICULA_ACTUAL = /^\d{4}[BCDFGHJKLMNPRSTVWXYZ]{3}$/;
 const TELEFONO_ESPANOL = /^34[6-9]\d{8}$/;
+// Los de los talleres se escriben para leerlos, en grupos: «969 739 431».
+const TELEFONO_DE_TALLER = /^[89]\d{2} \d{3} \d{3}$/;
+// Sociedad limitada: la letra B, siete cifras y un dígito de control.
+const NIF_DE_SOCIEDAD = /^B(\d{7})(\d)$/;
+const ANIO_DE_MADRID = `select to_char(now() at time zone 'Europe/Madrid', 'YYYY')`;
 
 const bd = await crearBd();
 const usuarios = await sembrarUsuariosDemo(bd);
@@ -23,6 +28,29 @@ const datosDe = async (taller: string) => ({
   recambios: await contar('recambios', taller),
   ordenes: await contar('ordenes', taller),
 });
+
+// Un dato inventado que parezca relleno no convence a nadie en un PDF. Lo delatan tres cifras
+// seguidas que suben, bajan o se repiten de una en una (123, 987, 111) y dos ceros seguidos.
+function pareceRelleno(texto: string): boolean {
+  const cifras = [...texto.replace(/\D/g, '')].map(Number);
+  const trios = cifras.slice(0, -2).map((cifra, i) => [cifra, cifras[i + 1], cifras[i + 2]]);
+  const hayProgresion = trios.some(([a, b, c]) => Math.abs(b - a) <= 1 && c - b === b - a);
+
+  return hayProgresion || cifras.join('').includes('00');
+}
+
+// La suma de las cifras de un número de dos cifras como mucho: 14 es 1 + 4, es decir, 14 - 9.
+const sumaDeCifras = (doble: number) => (doble > 9 ? doble - 9 : doble);
+
+// El dígito de control de un CIF: las cifras en posición impar se duplican y las pares cuentan tal
+// cual; el control completa la suma hasta la decena siguiente.
+function digitoDeControl(cifras: string): number {
+  const suma = [...cifras]
+    .map(Number)
+    .reduce((total, cifra, i) => total + (i % 2 === 0 ? sumaDeCifras(cifra * 2) : cifra), 0);
+
+  return (10 - (suma % 10)) % 10;
+}
 
 describe('talleres de partida', () => {
   it('[C-13] Talleres Vega parte con 6 clientes, 8 vehículos, 10 recambios y 9 órdenes', async () => {
@@ -68,7 +96,8 @@ describe('órdenes de partida', () => {
     }
   });
 
-  it('[C-13] solo la orden entregada tiene número de factura, F-2026-0001, y fecha de entrega', async () => {
+  it('[C-13] solo la orden entregada tiene número de factura, F-<año>-0001, y fecha de entrega', async () => {
+    const anio = await valor(bd.sql, ANIO_DE_MADRID);
     const conNumero = await bd.sql(
       `select estado, numero_factura, entregada_en is not null as con_fecha
          from public.ordenes
@@ -77,7 +106,7 @@ describe('órdenes de partida', () => {
     );
 
     expect(conNumero).toEqual([
-      { estado: 'entregado', numero_factura: 'F-2026-0001', con_fecha: true },
+      { estado: 'entregado', numero_factura: `F-${anio}-0001`, con_fecha: true },
     ]);
   });
 
@@ -107,6 +136,58 @@ describe('datos inventados', () => {
       expect(telefono).toMatch(TELEFONO_ESPANOL);
     }
   });
+
+  it('[C-13] el NIF y el teléfono de cada taller tienen formato válido', async () => {
+    const talleres = await bd.sql(
+      'select nif, telefono from public.talleres where id in ($1, $2)',
+      [VEGA, RIBERA],
+    );
+
+    expect(talleres).toHaveLength(2);
+    for (const { nif, telefono } of talleres) {
+      const [, cuerpo, control] = String(nif).match(NIF_DE_SOCIEDAD) ?? [];
+      expect(cuerpo, `NIF ${nif}`).toBeDefined();
+      expect(Number(control), `dígito de control de ${nif}`).toBe(digitoDeControl(cuerpo));
+      expect(telefono).toMatch(TELEFONO_DE_TALLER);
+    }
+  });
+
+  it('[C-13] ningún NIF ni teléfono de la demo parece relleno', async () => {
+    const nif = await bd.sql('select nif as dato from public.talleres where id in ($1, $2)', [
+      VEGA,
+      RIBERA,
+    ]);
+    const telefonosDeTaller = await bd.sql(
+      'select telefono as dato from public.talleres where id in ($1, $2)',
+      [VEGA, RIBERA],
+    );
+    const telefonosDeCliente = await bd.sql(
+      'select right(telefono, 9) as dato from public.clientes',
+    );
+
+    const datos = [...nif, ...telefonosDeTaller, ...telefonosDeCliente].map(({ dato }) =>
+      String(dato),
+    );
+
+    expect(datos).toHaveLength(12);
+    expect(datos.filter(pareceRelleno)).toEqual([]);
+  });
+});
+
+describe('detector de datos de relleno', () => {
+  it.each(['B12345678', 'B87654321', '910 000 101', '910 000 202', '911 111 111', '34600456789'])(
+    '[C-13] %s parece relleno',
+    (dato) => {
+      expect(pareceRelleno(dato)).toBe(true);
+    },
+  );
+
+  it.each(['B16725376', 'B44309219', '969 739 431', '978 691 051', '34641682845'])(
+    '[C-13] %s no parece relleno',
+    (dato) => {
+      expect(pareceRelleno(dato)).toBe(false);
+    },
+  );
 });
 
 describe('la demo con sus usuarios', () => {
