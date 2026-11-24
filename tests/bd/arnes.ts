@@ -2,7 +2,7 @@
 // de supabase/migrations que se prueban aquí son las mismas que van a la nube.
 import { readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { PGlite, type Transaction } from '@electric-sql/pglite';
+import { type Extensions, PGlite, type Transaction } from '@electric-sql/pglite';
 
 export type Sql = (texto: string, parametros?: unknown[]) => Promise<Record<string, unknown>[]>;
 export type Bd = { sql: Sql; cerrar: () => Promise<void> };
@@ -53,8 +53,10 @@ async function aplicarMigraciones(pg: PGlite): Promise<void> {
   }
 }
 
-export async function crearBd(): Promise<Bd> {
-  const pg = await PGlite.create();
+// `extensiones` carga las de contrib que un test necesite (pageinspect para mirar cómo queda
+// bloqueada una fila); después hay que crearlas con `create extension`.
+export async function crearBd(extensiones: Extensions = {}): Promise<Bd> {
+  const pg = await PGlite.create({ extensions: extensiones });
   await pg.exec(ENTORNO_SUPABASE);
   await aplicarMigraciones(pg);
   const bd: Bd = { sql: sqlDe(pg), cerrar: () => pg.close() };

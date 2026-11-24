@@ -1,5 +1,4 @@
 import {
-  type Color,
   grayscale,
   PageSizes,
   PDFDocument,
@@ -9,6 +8,7 @@ import {
 } from 'pdf-lib';
 import type { DocumentoOrden } from '@/nucleo/documento';
 import { IVA_PORCENTAJE } from '@/nucleo/importe';
+import { anchoDe, type Estilo, limpiar, lineasDe, recortarLineas } from './texto';
 
 // A4 vertical, en puntos. Lo que se dibuja pasa por una sola hoja con un cursor `y` que baja; al no
 // caber algo se abre otra página con su pie.
@@ -24,8 +24,10 @@ const SEPARACION = 12;
 
 const TAMANO_TITULO = 28;
 const TAMANO_NUMERO = 16;
+// D-12 también en papel: nada por debajo de 14 px, que son 10,5 pt. Las etiquetas y la leyenda del
+// pie se distinguen por el peso y el color, no por ser más pequeñas.
 const TAMANO_TEXTO = 10.5;
-const TAMANO_MENUDO = 9;
+const TAMANO_MENUDO = TAMANO_TEXTO;
 const TAMANO_TOTAL = 13;
 
 const TINTA = grayscale(0.08);
@@ -36,6 +38,9 @@ const GROSOR_DE_RAYA = 0.75;
 // Taller a la izquierda; cliente, vehículo y fecha a la derecha.
 const ANCHO_DE_COLUMNA = (ANCHO_UTIL - 2 * SEPARACION) / 2;
 const X_COLUMNA_DERECHA = MARGEN + ANCHO_DE_COLUMNA + 2 * SEPARACION;
+// La cabecera solo está en la primera página y no se parte: con tres líneas por dato cabe entera
+// aunque todos los datos sean larguísimos, y lo que sobra se corta con «…».
+const MAXIMO_DE_LINEAS_POR_DATO = 3;
 
 // Los números van alineados por la derecha de su columna; el concepto ocupa lo que queda.
 const X_IMPORTE = X_DERECHA;
@@ -47,7 +52,6 @@ const ALTO_DE_TOTALES = SEPARACION + 2 * (TAMANO_TEXTO + 5) + (TAMANO_TOTAL + 5)
 // El encabezado de la tabla y una fila: menos que esto y la tabla empieza en la página siguiente.
 const ALTO_MINIMO_DE_TABLA = 3 * INTERLINEA;
 
-type Estilo = { fuente: PDFFont; tamano: number; color?: Color };
 type Punto = { x: number; y: number };
 type Columna = { x: number; ancho: number };
 type Bloque = { etiqueta: string; lineas: string[] };
@@ -64,72 +68,18 @@ type Hoja = {
   y: number;
 };
 
-const ESPACIOS_RAROS = /[\p{Zs}\t]/gu;
-const INVISIBLES = /[\p{Cc}\p{Cf}]/gu;
-// \p{Zl} y \p{Zp} son los separadores de línea y de párrafo de Unicode (U+2028 y U+2029).
-const SALTOS_DE_LINEA = /\r\n|[\r\n\u0085\p{Zl}\p{Zp}]/u;
-
-// Helvetica solo dibuja WinAnsi y pdf-lib lanza con cualquier otra cosa. Los espacios finos o
-// irrompibles pasan a espacio normal, lo invisible se quita y lo que no tiene dibujo sale como «?»:
-// un nombre con un carácter raro no puede impedir que se descargue la factura.
-function limpiar(hoja: Hoja, texto: string): string {
-  const visible = texto.replace(ESPACIOS_RAROS, ' ').replace(INVISIBLES, '');
-  const dibujable = (caracter: string) => (hoja.admitidos.has(caracter) ? caracter : '?');
-  return Array.from(visible, dibujable).join('');
-}
-
-const anchoDe = (texto: string, { fuente, tamano }: Estilo) =>
-  fuente.widthOfTextAtSize(texto, tamano);
-
-// Una palabra más ancha que la línea se corta en los trozos que quepan.
-function trocear(palabra: string, estilo: Estilo, ancho: number): string[] {
-  const trozos: string[] = [];
-  let resto = palabra;
-  while (resto.length > 1 && anchoDe(resto, estilo) > ancho) {
-    let corte = 1;
-    while (corte < resto.length && anchoDe(resto.slice(0, corte + 1), estilo) <= ancho) corte += 1;
-    trozos.push(resto.slice(0, corte));
-    resto = resto.slice(corte);
-  }
-  return [...trozos, resto];
-}
-
-function ajustarParrafo(texto: string, estilo: Estilo, ancho: number): string[] {
-  const lineas: string[] = [];
-  let actual = '';
-  for (const palabra of texto.split(' ').filter(Boolean)) {
-    const candidata = actual === '' ? palabra : `${actual} ${palabra}`;
-    if (anchoDe(candidata, estilo) <= ancho) {
-      actual = candidata;
-      continue;
-    }
-    if (actual !== '') lineas.push(actual);
-    const trozos = trocear(palabra, estilo, ancho);
-    lineas.push(...trozos.slice(0, -1));
-    actual = trozos[trozos.length - 1];
-  }
-  return [...lineas, actual];
-}
-
-// El texto partido en las líneas que caben en `ancho`; cada salto de línea del original abre una.
-function lineasDe(hoja: Hoja, texto: string, estilo: Estilo, ancho: number): string[] {
-  return texto
-    .split(SALTOS_DE_LINEA)
-    .flatMap((parrafo) => ajustarParrafo(limpiar(hoja, parrafo), estilo, ancho));
-}
-
 function dibujar(
   hoja: Hoja,
   texto: string,
   { x, y }: Punto,
   { fuente, tamano, color = TINTA }: Estilo,
 ): void {
-  hoja.pagina.drawText(limpiar(hoja, texto), { x, y, size: tamano, font: fuente, color });
+  hoja.pagina.drawText(limpiar(hoja.admitidos, texto), { x, y, size: tamano, font: fuente, color });
 }
 
 // `x` es el borde derecho del texto.
 function dibujarADerecha(hoja: Hoja, texto: string, { x, y }: Punto, estilo: Estilo): void {
-  const limpio = limpiar(hoja, texto);
+  const limpio = limpiar(hoja.admitidos, texto);
   dibujar(hoja, limpio, { x: x - anchoDe(limpio, estilo), y }, estilo);
 }
 
@@ -146,7 +96,7 @@ function raya(hoja: Hoja, y: number): void {
 function dibujarPie(hoja: Hoja): void {
   const estilo = { fuente: hoja.normal, tamano: TAMANO_MENUDO, color: TINTA_SUAVE };
   raya(hoja, Y_DEL_PIE + TAMANO_MENUDO + 8);
-  lineasDe(hoja, hoja.leyenda, estilo, ANCHO_UTIL).forEach((linea, i) => {
+  lineasDe(hoja.admitidos, hoja.leyenda, estilo, ANCHO_UTIL).forEach((linea, i) => {
     dibujar(hoja, linea, { x: MARGEN, y: Y_DEL_PIE - i * INTERLINEA }, estilo);
   });
 }
@@ -193,7 +143,8 @@ function dibujarCabecera(hoja: Hoja, { titulo, numero }: DocumentoOrden): void {
 }
 
 // Una etiqueta y sus líneas, desde `desde` hacia abajo; la primera línea (el nombre, la matrícula)
-// va en negrita y las que no caben se parten. Devuelve por dónde queda el cursor.
+// va en negrita, las que no caben se parten y cada dato lleva como mucho tres líneas. Devuelve por
+// dónde queda el cursor.
 function dibujarBloque(
   hoja: Hoja,
   { etiqueta, lineas }: Bloque,
@@ -207,7 +158,11 @@ function dibujarBloque(
     .filter((texto) => texto.trim() !== '')
     .flatMap((texto, i) => {
       const estilo = { fuente: i === 0 ? hoja.negrita : hoja.normal, tamano: TAMANO_TEXTO };
-      return lineasDe(hoja, texto, estilo, ancho).map((linea) => ({ linea, estilo }));
+      const delDato = lineasDe(hoja.admitidos, texto, estilo, ancho);
+      return recortarLineas(delDato, MAXIMO_DE_LINEAS_POR_DATO, estilo, ancho).map((linea) => ({
+        linea,
+        estilo,
+      }));
     });
   lineasConEstilo.forEach(({ linea, estilo }, i) => {
     const arriba = desde - (i + 1) * INTERLINEA;
@@ -254,7 +209,7 @@ function dibujarDescripcion(hoja: Hoja, descripcion: string): void {
   asegurarEspacio(hoja, 2 * INTERLINEA);
   dibujar(hoja, 'Descripción', { x: MARGEN, y: hoja.y - TAMANO_MENUDO }, etiqueta);
   hoja.y -= INTERLINEA;
-  for (const linea of lineasDe(hoja, descripcion, estilo, ANCHO_UTIL)) {
+  for (const linea of lineasDe(hoja.admitidos, descripcion, estilo, ANCHO_UTIL)) {
     asegurarEspacio(hoja, INTERLINEA);
     dibujar(hoja, linea, { x: MARGEN, y: hoja.y - TAMANO_TEXTO }, estilo);
     hoja.y -= INTERLINEA;
@@ -277,7 +232,7 @@ function dibujarEncabezadoDeTabla(hoja: Hoja): void {
 // página sigue en la siguiente, bajo el encabezado de la tabla.
 function dibujarFila(hoja: Hoja, fila: Fila): void {
   const estilo = { fuente: hoja.normal, tamano: TAMANO_TEXTO };
-  lineasDe(hoja, fila.concepto, estilo, ANCHO_DE_CONCEPTO).forEach((linea, i) => {
+  lineasDe(hoja.admitidos, fila.concepto, estilo, ANCHO_DE_CONCEPTO).forEach((linea, i) => {
     if (asegurarEspacio(hoja, INTERLINEA)) dibujarEncabezadoDeTabla(hoja);
     const y = hoja.y - TAMANO_TEXTO;
     dibujar(hoja, linea, { x: MARGEN, y }, estilo);
