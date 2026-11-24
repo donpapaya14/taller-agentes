@@ -31,14 +31,32 @@ const CASOS = [
   { texto: '1234Bß', esperado: null },
   { texto: 'ﬀ1234AB', esperado: null },
   { texto: 'M1234ﬁ', esperado: null },
+  // La «ſ» (s larga) pasa a «S» y la «ı» (i sin punto) a «I» sin cambiar de longitud: tampoco valen.
+  { texto: 'M1234ſ', esperado: null },
+  { texto: '1234ſBC', esperado: null },
+  { texto: 'ı1234AB', esperado: null },
+  { texto: 'M1234Á', esperado: null },
+  { texto: 'm1234ñ', esperado: null },
+  { texto: 'Ж1234AB', esperado: null },
 ];
 
 const cuatroCifras = fc.stringMatching(/^\d{4}$/);
 const tresConsonantes = fc.stringMatching(/^[BCDFGHJKLMNPRSTVWXYZ]{3}$/);
 const unaODosLetras = fc.stringMatching(/^[A-Z]{1,2}$/);
 const separador = fc.constantFrom('', ' ', '-', ' - ');
-// Letras que en mayúsculas se escriben con dos letras de la A a la Z: «ß» → «SS», «ﬁ» → «FI».
-const letraDeDosMayusculas = fc.constantFrom('ß', 'ﬀ', 'ﬁ', 'ﬂ', 'ﬅ', 'ﬆ');
+// Letras que no son de la A a la Z. Las conocidas, en mayúsculas, se escriben con letras de la A a la
+// Z («ß» → «SS», «ſ» → «S», «ı» → «I», «ﬁ» → «FI»): son las que darían por buena una matrícula que
+// nadie escribió. Las demás, un acento u otro alfabeto, nunca han valido.
+const letrasQueSeVuelvenAscii = fc.constantFrom(...'ßſıﬀﬁﬂﬃﬄﬅﬆ');
+const cualquierLetraUnicode = fc
+  .integer({ min: 0x80, max: 0xffff })
+  .map((codigo) => String.fromCodePoint(codigo))
+  .filter((caracter) => /^\p{L}$/u.test(caracter));
+const letraFueraDeLaAaLaZ = fc.oneof(
+  letrasQueSeVuelvenAscii,
+  fc.constantFrom('á', 'É', 'ñ', 'Ñ', 'ü', 'ç', 'ł', 'Ж', 'α'),
+  cualquierLetraUnicode,
+);
 
 describe('matrícula', () => {
   it.each(CASOS)('[C-11] normaliza matrículas: "$texto"', ({ texto, esperado }) => {
@@ -88,13 +106,13 @@ describe('matrícula', () => {
   });
 });
 
-describe('matrícula: letras que cambian de longitud al pasar a mayúsculas', () => {
-  it('[C-11] una letra que en mayúsculas se escribe con dos no vale como letra de la matrícula', () => {
+describe('matrícula: letras que no son de la A a la Z', () => {
+  it('[C-11] una letra fuera de la A a la Z no vale como letra de la matrícula, ni aunque en mayúsculas se escriba como una que sí', () => {
     fc.assert(
       fc.property(
         unaODosLetras,
         cuatroCifras,
-        letraDeDosMayusculas,
+        letraFueraDeLaAaLaZ,
         fc.boolean(),
         (letras, cifras, rara, alPrincipio) => {
           const escrita = alPrincipio ? `${rara}${cifras}${letras}` : `${letras}${cifras}${rara}`;
