@@ -136,7 +136,7 @@ jobs:
       # ANON_KEY y SERVICE_ROLE_KEY sirven de respaldo si la CLI no entrega las claves nuevas.
       # La CLI lleva versión fija, como las acciones y las imágenes: sin `version` la acción baja la
       # última, y una subida de la CLI cambiaría el gate sin tocar este archivo.
-      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
         if: env.NIVEL == 'completo'
         with:
           version: 2.122.1
