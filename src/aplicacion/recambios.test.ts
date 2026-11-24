@@ -7,7 +7,16 @@ const MENSAJES = {
   nombre: 'Falta el nombre del recambio',
   precio: 'Precio no válido. Ejemplo: 12,50',
   entero: 'Tiene que ser un número entero, cero o más',
+  stockTope: 'El stock no puede pasar de 2.147.483.647',
+  minimoTope: 'El mínimo no puede pasar de 2.147.483.647',
+  precioTope: 'El precio no puede pasar de 21.474.836,47 €',
+  id: 'No se reconoce el recambio. Recarga la página',
 };
+
+// Lo más que guarda una columna integer de Postgres.
+const TOPE = 2_147_483_647;
+
+const ID_RECAMBIO = '3f2b8a4e-6c1d-4e7a-9b0f-5d2c8e1a7b64';
 
 const RECAMBIO = {
   referencia: 'fil-01',
@@ -184,5 +193,135 @@ describe('validarRecambio, entrada basura', () => {
         expect(resultado).toMatchObject({ ok: true, datos: { precioCentimos: centimos } });
       }),
     );
+  });
+});
+
+// Postgres guarda stock, mínimo y precio en céntimos como integer: más de 2147483647 lo rechaza con
+// un error que no dice qué corregir, así que el validador lo dice junto al campo.
+describe('validarRecambio, tope del stock y del mínimo', () => {
+  const DEMASIADO = [
+    ['un número', TOPE + 1],
+    ['un texto de cifras', String(TOPE + 1)],
+    ['el mayor entero seguro', Number.MAX_SAFE_INTEGER],
+    ['el mayor entero seguro, escrito', String(Number.MAX_SAFE_INTEGER)],
+  ] as const;
+
+  it.each([
+    ['stock', MENSAJES.stockTope],
+    ['stockMinimo', MENSAJES.minimoTope],
+  ])(
+    '[D-2] el tope del campo %s se acepta y lo que lo pasa se rechaza con su mensaje',
+    (campo, mensaje) => {
+      expect(validarRecambio({ ...RECAMBIO, [campo]: TOPE }).ok).toBe(true);
+      expect(validarRecambio({ ...RECAMBIO, [campo]: String(TOPE) }).ok).toBe(true);
+      DEMASIADO.forEach(([, valor]) => {
+        expect(validarRecambio({ ...RECAMBIO, [campo]: valor })).toEqual(
+          fallo({ [campo]: mensaje }),
+        );
+      });
+    },
+  );
+
+  it.each([
+    ['un texto de veinte cifras', '99999999999999999999'],
+    ['un número que ya no es un entero seguro', 1e21],
+  ])('[D-2] %s se rechaza con el mensaje del campo', (_caso, valor) => {
+    expect(validarRecambio({ ...RECAMBIO, stock: valor })).toEqual(
+      fallo({ stock: MENSAJES.entero }),
+    );
+  });
+
+  it('[D-2] el stock y el mínimo que pasan el tope se explican a la vez, cada uno con su mensaje', () => {
+    const resultado = validarRecambio({ ...RECAMBIO, stock: TOPE + 1, stockMinimo: TOPE + 1 });
+
+    expect(resultado).toEqual(
+      fallo({ stock: MENSAJES.stockTope, stockMinimo: MENSAJES.minimoTope }),
+    );
+  });
+});
+
+describe('validarRecambio, tope del precio', () => {
+  it.each([
+    ['en el tope exacto', '21474836,47', TOPE],
+    ['con un solo decimal', '21474836,4', 2_147_483_640],
+  ])('[D-5] un precio %s son %i céntimos y se acepta', (_caso, escrito, centimos) => {
+    expect(validarRecambio({ ...RECAMBIO, precio: escrito })).toMatchObject({
+      ok: true,
+      datos: { precioCentimos: centimos },
+    });
+  });
+
+  it.each([
+    ['un céntimo por encima del tope', '21474836,48'],
+    ['doce cifras', '999999999999'],
+    ['una cifra por encima', '214748364,7'],
+  ])('[D-2] un precio %s se rechaza con el mensaje del tope', (_caso, escrito) => {
+    expect(validarRecambio({ ...RECAMBIO, precio: escrito })).toEqual(
+      fallo({ precio: MENSAJES.precioTope }),
+    );
+  });
+
+  it('[D-2] un precio imposible de contar en céntimos exactos sigue siendo «no válido»', () => {
+    const escrito = '9'.repeat(30);
+
+    expect(validarRecambio({ ...RECAMBIO, precio: escrito })).toEqual(
+      fallo({ precio: MENSAJES.precio }),
+    );
+  });
+});
+
+describe('validarRecambio, el tope y el cero', () => {
+  it('[D-2] cualquier entero por encima del tope se rechaza y cualquiera hasta el tope se acepta', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: TOPE + 1, max: Number.MAX_SAFE_INTEGER }),
+        fc.integer({ min: 0, max: TOPE }),
+        (demasiado, valido) => {
+          expect(validarRecambio({ ...RECAMBIO, stock: demasiado })).toEqual(
+            fallo({ stock: MENSAJES.stockTope }),
+          );
+          expect(validarRecambio({ ...RECAMBIO, stock: valido }).ok).toBe(true);
+        },
+      ),
+    );
+  });
+
+  it('un valor por debajo de cero sigue explicándose con el mensaje de siempre, no con el del tope', () => {
+    const resultado = validarRecambio({ ...RECAMBIO, stock: -1, stockMinimo: -TOPE });
+
+    expect(resultado).toEqual(fallo({ stock: MENSAJES.entero, stockMinimo: MENSAJES.entero }));
+  });
+});
+
+describe('validarRecambio, id del recambio que se edita', () => {
+  it('sin id es un alta y los datos salen sin id', () => {
+    const resultado = validarRecambio(RECAMBIO);
+
+    expect(resultado.ok && 'id' in resultado.datos).toBe(false);
+  });
+
+  it('con el id de un recambio (uuid) es una edición y el id sale con los datos', () => {
+    const resultado = validarRecambio({ ...RECAMBIO, id: ID_RECAMBIO });
+
+    expect(resultado).toMatchObject({ ok: true, datos: { id: ID_RECAMBIO, referencia: 'FIL-01' } });
+  });
+
+  it.each([
+    ['vacío', ''],
+    ['un texto cualquiera', 'basura'],
+    ['un uuid con una cifra de menos', '3f2b8a4e-6c1d-4e7a-9b0f-5d2c8e1a7b6'],
+    ['un uuid con letras que no son hexadecimales', '3f2b8a4e-6c1d-4e7a-9b0f-5d2c8e1a7bzz'],
+    ['diez mil caracteres', 'a'.repeat(10_000)],
+    ['un número', 12],
+    ['nulo', null],
+    ['una lista', [ID_RECAMBIO]],
+  ])('[D-2] un id %s no es un uuid y se rechaza', (_caso, id) => {
+    expect(validarRecambio({ ...RECAMBIO, id })).toEqual(fallo({ id: MENSAJES.id }));
+  });
+
+  it('[D-2] un id roto no impide explicar a la vez los campos mal escritos', () => {
+    const resultado = validarRecambio({ ...RECAMBIO, id: 'basura', stock: -1 });
+
+    expect(resultado).toEqual(fallo({ id: MENSAJES.id, stock: MENSAJES.entero }));
   });
 });
