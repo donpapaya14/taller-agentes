@@ -5,7 +5,7 @@ import { LineaDeRondas } from './LineaDeRondas';
 afterEach(cleanup);
 
 const URL_REPO = 'https://github.com/donpapaya14/taller-agentes';
-const COMMIT = '61b7ca6a7d244d654f5fb7c8a8b76f3420e14cd1';
+const COMMIT = 'f82dbb438a708e302844567592d660847f979ebd';
 
 const fallo = (directriz: string, evidencia = `Evidencia medida para ${directriz}`) => ({
   directriz,
@@ -73,7 +73,7 @@ describe('LineaDeRondas: una pieza por ronda', () => {
       `${URL_REPO}/commit/${COMMIT}`,
       `${URL_REPO}/commit/${COMMIT}`,
     ]);
-    expect(enlaces.map((enlace) => enlace.textContent)).toEqual(['61b7ca6', '61b7ca6']);
+    expect(enlaces.map((enlace) => enlace.textContent)).toEqual(['f82dbb4', 'f82dbb4']);
   });
 
   it('[C-12] enseña la fecha de la revisión y su número de ronda', () => {

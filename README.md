@@ -14,9 +14,9 @@ https://foso-taller.vercel.app
 
 | Correo                        | Rol      | Taller          | Contraseña          |
 | ----------------------------- | -------- | --------------- | ------------------- |
-| `jefe@tallerdemo.example`     | jefe     | Talleres Vega   | `{{DEMO_PASSWORD}}` |
-| `mecanico@tallerdemo.example` | mecánico | Talleres Vega   | `{{DEMO_PASSWORD}}` |
-| `jefe@otrotaller.example`     | jefe     | Mecánica Ribera | `{{DEMO_PASSWORD}}` |
+| `jefe@tallerdemo.example`     | jefe     | Talleres Vega   | `foso-taller-047359-demo` |
+| `mecanico@tallerdemo.example` | mecánico | Talleres Vega   | `foso-taller-047359-demo` |
+| `jefe@otrotaller.example`     | jefe     | Mecánica Ribera | `foso-taller-047359-demo` |
 
 En `/login`, «Entrar como jefe» y «Entrar como mecánico» entran sin escribir nada; el jefe del otro taller entra tecleando correo y contraseña. Dos minutos:
 
