@@ -90,6 +90,24 @@ describe('puertas de calidad', () => {
     expect(scripts['spec:check']).not.toContain('--no-escribir');
   });
 
+  // La CLI de Vercel lee VERCEL_TOKEN del entorno; un `--token` lo dejaría en la línea de comandos,
+  // que el log de Actions y la lista de procesos enseñan.
+  it('[P-1] el script desplegar usa la CLI de Vercel con versión fija y sin pasarle el token', () => {
+    const { scripts } = leerJson<{ scripts: Record<string, string> }>('package.json');
+
+    const llamadas = scripts.desplegar.split(' && ');
+
+    expect(llamadas).toHaveLength(3);
+    expect(
+      llamadas.filter(
+        (llamada) => !/^npx vercel@\d+\.\d+\.\d+ (?:pull|build|deploy) /.test(llamada),
+      ),
+    ).toEqual([]);
+    expect(scripts.desplegar).not.toContain('--token');
+  });
+});
+
+describe('job desplegar', () => {
   it('[P-1] el job desplegar instala el navegador antes del smoke de producción', () => {
     const gate = readFileSync(resolve(raiz, '.github/workflows/gate.yml'), 'utf8');
     const inicioDelJob = gate.indexOf('\n  desplegar:');
@@ -113,6 +131,37 @@ describe('puertas de calidad', () => {
 
     expect(comprobacion).toBeGreaterThan(-1);
     expect(despliegue).toBeGreaterThan(comprobacion);
+  });
+
+  it('[P-1] los secretos de Vercel van en el env del paso Desplegar y no en el de todo el job', () => {
+    const desplegar = trabajoDesplegar();
+    const cabeceraDelJob = desplegar.slice(0, desplegar.indexOf('steps:'));
+    const lineas = desplegar.split('\n').map((linea) => linea.trim());
+    const paso = lineas.slice(lineas.indexOf('- name: Desplegar'));
+
+    expect(cabeceraDelJob).not.toMatch(/VERCEL_(?:TOKEN|ORG_ID|PROJECT_ID)/);
+    expect(paso.slice(0, 6)).toEqual([
+      '- name: Desplegar',
+      'env:',
+      'VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}',
+      'VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}',
+      'VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}',
+      'run: npm run desplegar',
+    ]);
+    // Los tres, y solo ahí: ningún otro paso del job los lee.
+    expect(desplegar.match(/secrets\.VERCEL_/g)).toHaveLength(3);
+  });
+
+  it('[P-1] el smoke de producción recibe la contraseña de la demo en su propio paso', () => {
+    const gate = lineasDe(GATE).map((linea) => linea.trim());
+    const paso = gate.slice(gate.indexOf('- name: Smoke de producción'));
+
+    expect(paso.slice(0, 4)).toEqual([
+      '- name: Smoke de producción',
+      'env:',
+      'DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}',
+      'run: npm run smoke',
+    ]);
   });
 });
 
@@ -139,15 +188,16 @@ describe('gate de GitHub', () => {
     expect(new Set(imagenes).size).toBe(3);
   });
 
-  it('[P-1] el smoke de producción recibe la contraseña de la demo en su propio paso', () => {
+  it('[P-1] el gate fija la versión de la CLI de Supabase que levanta la base local', () => {
     const gate = lineasDe(GATE).map((linea) => linea.trim());
-    const paso = gate.slice(gate.indexOf('- name: Smoke de producción'));
+    const paso = gate.slice(
+      gate.findIndex((linea) => linea.startsWith('- uses: supabase/setup-cli@')),
+    );
 
-    expect(paso.slice(0, 4)).toEqual([
-      '- name: Smoke de producción',
-      'env:',
-      'DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}',
-      'run: npm run smoke',
+    expect(paso.slice(1, 4)).toEqual([
+      "if: env.NIVEL == 'completo'",
+      'with:',
+      expect.stringMatching(/^version: 2\.\d+\.\d+$/),
     ]);
   });
 

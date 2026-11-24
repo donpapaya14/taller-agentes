@@ -26,7 +26,7 @@
     "gate:cabeceras": "vitest run tests/seguridad/cabeceras.test.ts",
     "smoke": "playwright test tests/e2e/smoke.spec.ts",
     "checklist": "node scripts/checklist-entrega.mjs",
-    "desplegar": "npx vercel@65.16.0 pull --yes --environment=production --token=\"$VERCEL_TOKEN\" && npx vercel@65.16.0 build --prod --token=\"$VERCEL_TOKEN\" && npx vercel@65.16.0 deploy --prebuilt --prod --token=\"$VERCEL_TOKEN\""
+    "desplegar": "npx vercel@65.16.0 pull --yes --environment=production && npx vercel@65.16.0 build --prod && npx vercel@65.16.0 deploy --prebuilt --prod"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

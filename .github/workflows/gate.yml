@@ -134,8 +134,12 @@ jobs:
       # Los necesitan gate:e2e y gate:a11y (gate:rls usa PGlite). Las claves salen del
       # `supabase status` del propio runner: son las de esa base local, no un secreto del repo.
       # ANON_KEY y SERVICE_ROLE_KEY sirven de respaldo si la CLI no entrega las claves nuevas.
+      # La CLI lleva versión fija, como las acciones y las imágenes: sin `version` la acción baja la
+      # última, y una subida de la CLI cambiaría el gate sin tocar este archivo.
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         if: env.NIVEL == 'completo'
+        with:
+          version: 2.122.1
 
       - name: Supabase local, usuarios de demostración y navegador
         if: env.NIVEL == 'completo'
@@ -199,11 +203,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: produccion
-    # Secretos de despliegue del entorno `produccion`; URL_BASE apunta el smoke al sitio publicado.
+    # URL_BASE apunta el smoke al sitio publicado: es una variable del entorno `produccion`, no un
+    # secreto, y la leen la comprobación y el smoke.
     env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       URL_BASE: ${{ vars.URL_PRODUCCION }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -216,7 +218,13 @@ jobs:
       # producción que nadie ha mirado: se corta antes de desplegar.
       - name: Comprobar la dirección de producción
         run: test -n "$URL_BASE" || { echo "::error::Falta la variable URL_PRODUCCION del entorno produccion"; exit 1; }
+      # Los secretos de Vercel van solo en este paso, no en todo el job: así `npm ci`, el navegador y
+      # el smoke no los ven. La CLI los lee del entorno, sin `--token` en la línea de comandos.
       - name: Desplegar
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: npm run desplegar
       # El smoke es una prueba de Playwright: el runner de GitHub no trae el navegador.
       - name: Instalar el navegador del smoke
