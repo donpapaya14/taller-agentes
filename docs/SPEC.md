@@ -1304,8 +1304,8 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 <!-- estado:inicio -->
 | ID | Estado | Tests (n) | Fecha |
 |---|---|---|---|
-| C-1 | VERIFICADO | 72 | 2026-11-24 |
-| C-2 | VERIFICADO | 21 | 2026-11-24 |
+| C-1 | VERIFICADO | 77 | 2026-11-24 |
+| C-2 | VERIFICADO | 22 | 2026-11-24 |
 | C-3 | VERIFICADO | 91 | 2026-11-24 |
 | C-4 | VERIFICADO | 100 | 2026-11-24 |
 | C-5 | VERIFICADO | 91 | 2026-11-24 |
@@ -1314,39 +1314,39 @@ Con el checklist delante, Vladys da el segundo tiempo del GATE 3: enviar la cand
 | C-8 | VERIFICADO | 105 | 2026-11-24 |
 | C-9 | VERIFICADO | 37 | 2026-11-24 |
 | C-10 | VERIFICADO | 24 | 2026-11-24 |
-| C-11 | VERIFICADO | 83 | 2026-11-24 |
+| C-11 | VERIFICADO | 93 | 2026-11-24 |
 | C-12 | VERIFICADO | 34 | 2026-11-24 |
-| C-13 | VERIFICADO | 96 | 2026-11-24 |
-| C-14 | VERIFICADO | 5 | 2026-11-24 |
+| C-13 | VERIFICADO | 117 | 2026-11-24 |
+| C-14 | VERIFICADO | 8 | 2026-11-24 |
 | C-15 | VERIFICADO | 24 | 2026-11-24 |
 | C-16 | MANUAL | 0 | 2026-11-24 |
 | C-17 | VERIFICADO | 3 | 2026-11-24 |
-| C-18 | VERIFICADO | 11 | 2026-11-24 |
-| P-1 | VERIFICADO | 3 | 2026-11-24 |
+| C-18 | VERIFICADO | 12 | 2026-11-24 |
+| P-1 | VERIFICADO | 7 | 2026-11-24 |
 | P-2 | VERIFICADO | 5 | 2026-11-24 |
 | P-3 | VERIFICADO | 3 | 2026-11-24 |
 | P-4 | VERIFICADO | 17 | 2026-11-24 |
 | P-5 | MANUAL | 0 | 2026-11-24 |
-| P-6 | VERIFICADO | 7 | 2026-11-24 |
+| P-6 | VERIFICADO | 11 | 2026-11-24 |
 | P-7 | MANUAL | 0 | 2026-11-24 |
 | P-8 | MANUAL | 5 | 2026-11-24 |
 | P-9 | VERIFICADO | 2 | 2026-11-24 |
 | P-10 | MANUAL | 0 | 2026-11-24 |
 | P-11 | MANUAL | 0 | 2026-11-24 |
 | D-1 | VERIFICADO | 16 | 2026-11-24 |
-| D-2 | VERIFICADO | 431 | 2026-11-24 |
+| D-2 | VERIFICADO | 433 | 2026-11-24 |
 | D-3 | VERIFICADO | 14 | 2026-11-24 |
 | D-4 | VERIFICADO | 8 | 2026-11-24 |
 | D-5 | VERIFICADO | 66 | 2026-11-24 |
 | D-6 | VERIFICADO | 2 | 2026-11-24 |
 | D-7 | VERIFICADO | 1 | 2026-11-24 |
 | D-8 | VERIFICADO | 2 | 2026-11-24 |
-| D-9 | VERIFICADO | 3 | 2026-11-24 |
+| D-9 | VERIFICADO | 8 | 2026-11-24 |
 | D-10 | VERIFICADO | 9 | 2026-11-24 |
 | D-11 | VERIFICADO | 21 | 2026-11-24 |
 | D-12 | VERIFICADO | 7 | 2026-11-24 |
-| D-13 | MANUAL | 37 | 2026-11-24 |
-| D-14 | VERIFICADO | 218 | 2026-11-24 |
+| D-13 | MANUAL | 50 | 2026-11-24 |
+| D-14 | VERIFICADO | 254 | 2026-11-24 |
 | D-15 | VERIFICADO | 7 | 2026-11-24 |
 
 Resumen: 44 criterios: 37 VERIFICADO, 0 ROJO, 0 SIN TEST, 7 MANUAL, 0 OMITIDO.
