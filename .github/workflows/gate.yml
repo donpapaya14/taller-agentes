@@ -212,6 +212,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Sin la variable URL_PRODUCCION el smoke levantaría la app en el runner y daría por buena una
+      # producción que nadie ha mirado: se corta antes de desplegar.
+      - name: Comprobar la dirección de producción
+        run: test -n "$URL_BASE" || { echo "::error::Falta la variable URL_PRODUCCION del entorno produccion"; exit 1; }
       - name: Desplegar
         run: npm run desplegar
       # El smoke es una prueba de Playwright: el runner de GitHub no trae el navegador.

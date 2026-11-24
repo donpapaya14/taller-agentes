@@ -1,7 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
 const URL_LOCAL = 'http://127.0.0.1:3000';
-const urlBase = process.env.URL_BASE;
+// Una variable vacía (`URL_BASE=` en un workflow sin su variable) no es una dirección: `||` y no `??`.
+const urlBase = process.env.URL_BASE || undefined;
 
 export default defineConfig({
   testDir: 'tests/e2e',

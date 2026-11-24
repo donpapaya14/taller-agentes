@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const raiz = resolve(import.meta.dirname, '../..');
 
@@ -12,6 +12,12 @@ const leerTexto = (archivo: string) => readFileSync(resolve(raiz, archivo), 'utf
 const GATE = '.github/workflows/gate.yml';
 
 const lineasDe = (archivo: string) => leerTexto(archivo).split('\n');
+
+// El texto del job `desplegar`: de su clave al final del archivo.
+const trabajoDesplegar = () => {
+  const gate = leerTexto(GATE);
+  return gate.slice(gate.indexOf('\n  desplegar:'));
+};
 
 // Cada `uses:` de un workflow: la acción, su referencia y el comentario con la versión.
 const usosDeAcciones = (workflow: string[]) =>
@@ -96,6 +102,18 @@ describe('puertas de calidad', () => {
     expect(instalacion).toBeGreaterThan(-1);
     expect(smoke).toBeGreaterThan(instalacion);
   });
+
+  // Sin URL_PRODUCCION el smoke levantaría la app en el runner y daría por buena una producción
+  // que nadie ha mirado: el job falla antes de desplegar.
+  it('[P-1] el job desplegar falla antes de desplegar si URL_BASE está vacía', () => {
+    const desplegar = trabajoDesplegar();
+
+    const comprobacion = desplegar.indexOf('test -n "$URL_BASE"');
+    const despliegue = desplegar.indexOf('- name: Desplegar');
+
+    expect(comprobacion).toBeGreaterThan(-1);
+    expect(despliegue).toBeGreaterThan(comprobacion);
+  });
 });
 
 describe('gate de GitHub', () => {
@@ -141,5 +159,35 @@ describe('gate de GitHub', () => {
 
     expect(lineas.filter((linea) => linea.startsWith('- package-ecosystem:'))).toHaveLength(2);
     expect(esperas).toHaveLength(2);
+  });
+});
+
+describe('configuración de Playwright', () => {
+  const APP_LOCAL = 'http://127.0.0.1:3000';
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  // La configuración lee `URL_BASE` al cargarse: cada caso la carga de nuevo con su entorno.
+  async function configuracionCon(urlBase: string | undefined) {
+    vi.stubEnv('URL_BASE', urlBase);
+    vi.resetModules();
+    return (await import('../../playwright.config')).default;
+  }
+
+  it.each([undefined, ''])(
+    '[P-1] con URL_BASE %j prueba la app local y la levanta',
+    async (urlBase) => {
+      const configuracion = await configuracionCon(urlBase);
+
+      expect(configuracion.use?.baseURL).toBe(APP_LOCAL);
+      expect(configuracion.webServer).toMatchObject({ url: APP_LOCAL });
+    },
+  );
+
+  it('[P-1] con URL_BASE prueba ese despliegue y no levanta nada', async () => {
+    const configuracion = await configuracionCon('https://produccion.example');
+
+    expect(configuracion.use?.baseURL).toBe('https://produccion.example');
+    expect(configuracion.webServer).toBeUndefined();
   });
 });
