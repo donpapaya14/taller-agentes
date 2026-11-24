@@ -21,7 +21,7 @@ https://taller-agentes.vercel.app
 En `/login`, «Entrar como jefe» y «Entrar como mecánico» entran sin escribir nada; el jefe del otro taller entra tecleando correo y contraseña. Dos minutos:
 
 1. Como jefe, el tablero reparte las órdenes en Recibido, En reparación, Listo y Entregado. El botón grande de cada tarjeta la avanza de columna.
-2. Abre una orden: «Descargar presupuesto» (PDF), «Avisar por WhatsApp» (abre `wa.me` con el mensaje; no envía nada) y «Entregar», que numera la factura `F-AAAA-NNNN` y descuenta el stock.
+2. Abre una orden: «Descargar presupuesto» (PDF), «Avisar por WhatsApp» (abre `wa.me` con el mensaje; no envía nada) y, en una orden Listo, «Entregar», que numera la factura `F-AAAA-NNNN` y descuenta el stock.
 3. En `/recambios`, los que están bajo mínimo salen arriba, en ámbar.
 4. Como mecánico, «Entregar» no aparece y no se pueden crear ni cambiar recambios.
 5. Como jefe de Mecánica Ribera no sale ni una matrícula de Talleres Vega: el aislamiento lo impone Postgres, no la interfaz.
