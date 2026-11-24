@@ -1,0 +1,91 @@
+{
+  "feature": "f09-pantallas-acceso",
+  "ronda": 2,
+  "fecha": "2026-11-24",
+  "commitRevisado": "443a227983c8927b9fb49ccf8ec2d17a08fc2830",
+  "veredicto": "PASA",
+  "comandos": [
+    {
+      "comando": "git log --oneline main...paso-12 && git diff --stat main...paso-12 && git diff --name-only main...paso-12 (archivos protegidos) && git diff --stat 8fb1f4a HEAD",
+      "resultado": "OK",
+      "resumen": "Cinco commits en el rango: 8fecb50 (feat, ronda 1), 8fb1f4a (merge de main), 4571343 (ronda 1 de Testing), b0a0820 (merge de main) y 443a227 (fix, ronda 2). main (b7f0acf) ya está dentro de la rama, así que main...paso-12 es solo f09: 37 archivos, 2732 inserciones y 30 borrados en src, tests, estilos y proceso/. Desde la ronda 1 la rama solo cambia cinco archivos propios: src/app/error.tsx y su test, un comentario en (taller)/layout.tsx y otro en page.tsx, y tests/diseno/estados.test.ts. El merge de main no toca ninguna carpeta de f09 (git diff --stat entre 4571343 y b0a0820 sobre src/app, src/ui, tests/diseno, tests/e2e, tests/proceso y proceso/f09: vacío). Entre 8fb1f4a y HEAD no cambian login, /proceso, la 404, (taller)/error.tsx, (taller)/loading.tsx, globals.css, src/ui, el proxy ni tests/e2e. Ningún archivo protegido tocado (package.json, lockfile, DIRECTRICES.md, docs, agentes, eslint, dependency-cruiser, scripts, supabase)."
+    },
+    {
+      "comando": "npm run check:full",
+      "resultado": "OK",
+      "resumen": "Sale con 0 en 16 s. eslint y tsc limpios; vitest 70 archivos y 1040 tests en verde; cobertura 98,9 % de sentencias, 99,28 % de ramas y 98,75 % de líneas; dependency-cruiser sin violaciones (112 módulos, 279 dependencias); puertas: umbrales sin hallazgos, 0 clones en 129 archivos y trinquete sin hallazgos. Solo avisos: silencios que citan rondas antiguas (aceptados por UMBRAL) y mocks añadidos en tests. El árbol de git queda sin cambios."
+    },
+    {
+      "comando": "npm run spec:check",
+      "resultado": "OK",
+      "resumen": "Sale con 0: 15 directrices, 14 VERIFICADO, 0 ROJO, 0 SIN TEST y 1 MANUAL (D-13)."
+    },
+    {
+      "comando": "npm run build",
+      "resultado": "OK",
+      "resumen": "Sale con 0. Next 16.4.6 compila y pasa los tipos; rutas /, /_not-found, /login, /muestra y /proceso, más el proxy. La rama todavía no tiene pantallas privadas bajo (taller)."
+    },
+    {
+      "comando": "Build de la rama servida con npx next start -p 3380 y un Supabase falso local en el 3381 (sin credenciales reales); URL_BASE=http://127.0.0.1:3380 npx playwright test tests/e2e/pantallas-publicas.spec.ts tests/e2e/tablero-visual.spec.ts. Sustituye a npm run gate:e2e por decisión del orquestador: ese script apunta a tests/e2e/movil.spec.ts, que crea un paso posterior.",
+      "resultado": "OK",
+      "resumen": "16 pruebas en verde (3,3 s) en los proyectos movil (390 px) y escritorio (1440 px): /, /login, /proceso y la 404 no se salen de la pantalla de 320 a 1920 px; las matrículas de 8 y de 40 caracteres; el grano a 390 px; ninguna tarjeta tarda más de 600 ms."
+    },
+    {
+      "comando": "Playwright (Chromium, es-ES, 390x844) contra la build real en el 3380: «Entrar como jefe» y luego GET / con el REST de miembros en 500, sin fila, con fila rota y colgado (Supabase falso, scripts de Testing fuera del repo)",
+      "resultado": "OK",
+      "resumen": "En los cuatro casos HTTP 500 y la pantalla de src/app/error.tsx: lang es, title FOSO, un solo h1 «Algo ha fallado», el texto «Vuelve a intentarlo. Si sigue pasando, sal y entra de nuevo.», botones Reintentar y Salir de 56 px de alto y nada en inglés. El colgado llega a la pantalla a los 4,0 s. Cache-Control private, no-cache, no-store y las mismas cabeceras de seguridad que una respuesta 200. Con la sesión sana, / lleva a /tablero (404 en esta rama, sin pantallas privadas todavía). Es el caso que falló en la ronda 1, donde salía la pantalla de fábrica de Next en inglés."
+    },
+    {
+      "comando": "Copia desechable de la rama fuera del repo (git archive de HEAD, node_modules clonado) con páginas de prueba bajo (taller) (tablero, roto, intermitente), compilada y servida en el 3382: los mismos fallos sobre GET /tablero y GET /, y el usuario sin fila que entra por el formulario (Playwright, scripts de Testing)",
+      "resultado": "OK",
+      "resumen": "Con la sesión sana /tablero da 200 con la barra de navegación. Con REST en 500, sin fila, fila rota y colgado: HTTP 500 y la pantalla de error de la app, sin barra y no la de fábrica de Next; es el fallo del armazón de (taller)/layout.tsx que en la ronda 1 no recogía nadie. El usuario sin fila entra por el formulario, ve esa pantalla en /tablero, /login lo devuelve a /tablero (la misma pantalla) y Salir lo lleva a /login con su formulario: ya no se queda sin salida."
+    },
+    {
+      "comando": "Playwright en la build real y en la copia: Reintentar tres veces con el fallo vivo y una más con el fallo arreglado; Salir con el cierre de sesión de Auth correcto, en 500 y colgado; Enter, Espacio, foco y doble pulsación",
+      "resultado": "OK",
+      "resumen": "Con el fallo vivo cada pulsación de Reintentar manda una petición RSC y una lectura al servidor de datos (3 de 3) y la pantalla se queda; con el fallo arreglado, un Reintentar más recupera la pantalla (copia: /tablero con su barra; build real: / lleva a /tablero). Salir con el cierre de Auth correcto, en 500 y colgado borra la cookie de sesión y llega a /login con su formulario (a los 0,06 s, 0,06 s y 4,1 s); /login ya no devuelve al tablero. Enter y Espacio activan los botones, el foco se ve con 2 px y la doble pulsación no da errores de página (el doble Reintentar manda dos lecturas al servidor de datos)."
+    },
+    {
+      "comando": "Playwright en Chromium y en WebKit (revisión 2336 local) sobre la pantalla de error: 390 y 1440 px, barrido de 131 anchos de 320 a 1920 px, axe con wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa y best-practice, contraste de cada texto contra su fondo y tamaño de letra (scripts de Testing)",
+      "resultado": "OK",
+      "resumen": "A 390 px: sin desborde, botones de 56 x 358 px, texto desde 18 px, peor contraste 6,83:1, axe sin violaciones (solo color-contrast incompleto por el grano del fondo). De 320 a 1920 px: 0 desbordes y el titular no se sale en ningún ancho. WebKit da lo mismo; allí la cookie de sesión se inyectó a mano porque el servidor la manda con Secure y WebKit no la guarda sobre http. La pantalla de error de (taller) (/roto, con la barra) sigue igual: axe sin violaciones, letra desde 14 px, sin desborde."
+    },
+    {
+      "comando": "node: búsqueda con expresiones regulares en las 2574 líneas añadidas de src, tests, scripts y supabase en main...paso-12 y en el rango 8fb1f4a..HEAD (script de Testing fuera del repo)",
+      "resultado": "OK",
+      "resumen": "Cero coincidencias de silenciadores de eslint, TypeScript, cobertura o mutación, del tipo any, de HTML inyectado, de skip, only o todo en los tests, de NEXT_PUBLIC_, de console, de emojis, de colores literales, de catch vacío, de tamaños sueltos en px y de estilos en línea. Las coincidencias de «todo» son la palabra en castellano en comentarios y nombres de constantes."
+    },
+    {
+      "comando": "node: las 50 clases de src/app/error.tsx y de Boton contra los selectores del CSS compilado de .next/static",
+      "resultado": "OK",
+      "resumen": "Las 50 tienen selector en el CSS compilado y salen de tokens.css (text-portada, text-mayor, font-supernegra, tracking-titular, leading-texto, max-w-lectura, gap-e3, gap-e5, px-e4, py-e8, text-acero, min-h-toque y las demás). Ningún valor suelto (D-9)."
+    },
+    {
+      "comando": "13 mutaciones sobre una copia desechable fuera del repo, cada una con vitest sobre los tests de lo nuevo (error.test.tsx, estados.test.ts, layout.test.tsx y page.test.tsx; script de Testing)",
+      "resultado": "OK",
+      "resumen": "Línea base en verde (26 tests) y mueren las 13: borrar src/app/error.tsx, Reintentar que no llama a retry, Reintentar con reset en vez de retry, sin Salir, Salir sin action, titular en inglés, mensaje técnico a la vista, dos main, el comprobador de [D-14] que cuenta el error.tsx del propio segmento para su layout, el que ignora los layouts, el que ignora las páginas, el layout del taller que se traga el fallo de la sesión y la portada que se traga todos los fallos. La copia se restaura y queda en verde."
+    },
+    {
+      "comando": "gitleaks git --log-opts=main..paso-12 . ; gitleaks dir src tests proceso; búsqueda de nombres y valores de secretos y de NEXT_PUBLIC_ en .next/static y en las respuestas de /, /login, /proceso y la pantalla de error",
+      "resultado": "OK",
+      "resumen": "gitleaks 8.30.1 sin hallazgos (3 commits, 120 KB; src, tests y proceso, 6 KB). Ningún nombre ni valor de secreto ni NEXT_PUBLIC_ en los 15 archivos de .next/static ni en el HTML y el RSC de /, /login y la pantalla de error. /proceso cita los nombres de tres variables de entorno, no sus valores, porque rondas de f06 las mencionan en su texto; ninguna cadena con pinta de clave."
+    },
+    {
+      "comando": "Playwright con JavaScript desactivado y la cookie de sesión: GET / con el REST de miembros en 500, HTML crudo de la respuesta",
+      "resultado": "OK",
+      "resumen": "HTTP 500, lang vacío, title FOSO y cuerpo sin texto: la pantalla de error es de cliente y el HTML que manda el servidor para un fallo de render no la trae. No incumple ninguna directriz; va en observaciones (punto 3a)."
+    },
+    {
+      "comando": "npx vitest run tests/proceso src/adaptadores/proceso; npm run check:full (con este archivo de ronda ya escrito)",
+      "resultado": "OK",
+      "resumen": "Los tests del esquema de rondas pasan (9 archivos, 91 tests) y check:full sale con 0 en 16 s: los mismos 70 archivos y 1040 tests, las mismas coberturas, sin violaciones de arquitectura y sin hallazgos del detector de manipulación sobre este archivo."
+    },
+    {
+      "comando": "Parar con TaskStop los tres servidores y lsof -nP -iTCP:3380 -iTCP:3381 -iTCP:3382 -sTCP:LISTEN; ps de next y node sueltos",
+      "resultado": "OK",
+      "resumen": "La build en el 3380, la copia en el 3382 y el Supabase falso en el 3381 están parados; los tres puertos libres y ningún proceso suelto. El árbol de git solo tiene este archivo sin seguir."
+    }
+  ],
+  "fallos": [],
+  "observaciones": "1) Alcance. Rango main...paso-12 con tres puntos; commitRevisado es 443a227, el fix de la ronda 2. La ronda 1 falló por D-14: un fallo al leer la sesión (el armazón de (taller) y la portada) llegaba como la pantalla de fábrica de Next, en inglés y sin lang ni title. El fix añade src/app/error.tsx por encima de los dos, con «Reintentar» (retry) y «Salir», y un test [D-14] que exige un error.tsx por encima de cada armazón y de cada página. Comprobado en una build real y en una copia con páginas bajo (taller): los cuatro modos de fallo dan la pantalla nueva, así que el fallo queda corregido. npm run gate:e2e no se corrió por decisión del orquestador (apunta a tests/e2e/movil.spec.ts, que crea el paso 15); se corrieron a mano los dos specs que existen contra la build de la rama. Todo contra un Supabase falso local, nada contra el real; los tres servidores se pararon al terminar.\n\n2) Qué se midió y qué no se repitió. Lo nuevo se midió entero: D-9, D-10, D-12, D-13 y D-14 en el navegador, D-4 y D-8 con búsquedas propias, y mutaciones. No se repitieron los barridos de la ronda 1 sobre lo que no cambió (entradas basura del login, cookies falsificadas, dos talleres a la vez, la barra con nombres largos, /proceso con datos de estrés): login, barra, /proceso, 404, estilos y proxy son los mismos archivos que en la ronda 1 (git diff entre 8fb1f4a y HEAD vacío en esas rutas). D-3, D-5 y D-6 no se ven afectadas: no hay SQL, ni dinero, ni archivos nuevos en src/nucleo o src/aplicacion.\n\n3) Casos que rompen y que ninguna directriz cubre, con su evidencia en los comandos de arriba:\n a) Sin JavaScript, un fallo de servidor da HTTP 500 con la página en blanco y sin lang: la pantalla de error es de cliente y el HTML del servidor no la trae.\n b) «Reintentar» de (taller)/error.tsx sigue sin reintentar, como en la ronda 1 (punto 3a): usa reset, que no pide la pantalla al servidor. En una página que falla en las llamadas impares, tres pulsaciones no mandan ninguna petición a esa ruta y la pantalla se queda; tras recargar funciona. La pantalla nueva de src/app/error.tsx sí reintenta (retry), así que hoy el mismo botón se comporta distinto según qué pantalla de error salga. Pasar (taller)/error.tsx a retry lo igualaría.\n c) El mensaje es genérico. Los tres textos de sesion.ts («Tu cuenta no está asociada a ningún taller.», «No se pudo cargar tu taller…», «No se entienden los datos de tu taller…») no llegan a quien usa la app, porque en producción Next sustituye el mensaje de un fallo de servidor por un resumen. Quien tiene cuenta pero ningún taller ve la misma pantalla que con el servidor de datos caído, y «sal y entra de nuevo» no le arregla nada: necesita que alguien lo dé de alta.\n d) Ninguna prueba del repo comprueba en un navegador que Next entregue el fallo del armazón a src/app/error.tsx. El test [D-14] es estructural (hay un error.tsx por encima) y el de la pantalla le pasa las props a mano, así que seguiría en verde si Next renombrase retry (estable desde la 16.3). La comprobación de esta ronda necesitó páginas bajo (taller), que no existen hasta el paso 13; conviene que la recoja un spec de tests/e2e cuando existan.\n e) El comprobador de [D-14] salta el layout raíz diciendo que lo cubre global-error.tsx, pero ese archivo no existe y el test no lo exige. Hoy el layout raíz no lee nada del servidor y no puede fallar en tiempo de ejecución, así que no hay caso; si algún día lee algo, nada avisará.\n f) Menores de la ronda 1 que siguen como estaban porque no se tocaron: los botones de demostración sin estado de carga (3b), el formulario de correo que se vacía tras un rechazo (3c), la barra con nombres de más de 90 letras sin espacios entre 1024 y 1256 px (3d), los avisos del navegador en su idioma (3e), el botón «Entrar» de /proceso con la sesión iniciada, el mismo title en / y /login y --cuerpo-matricula sin suelo de 14 px (3f).\n\n4) Sin comprobar. Safari ni móvil reales (teclado y barra fija en iOS); Firefox (no está instalado); npm run dev; el login por el formulario en WebKit (la cookie va con Secure y WebKit no la guarda sobre http, por eso se inyectó a mano), y WebKit se probó con la revisión 2336 porque la que pide Playwright 1.65.1 no está instalada; el contraste sobre el grano píxel a píxel (axe lo deja incompleto: se midió contra el fondo plano). La mutación de Stryker no aplica: solo cubre src/nucleo."
+}

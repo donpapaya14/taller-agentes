@@ -8,27 +8,24 @@
     color-scheme: dark;
   }
 
+  /*
+   * El suelo del foso: grano fino y rejilla cada 64 px en el fondo del propio body, que se pinta en
+   * todo el lienzo y se repite hasta donde llegue la página. Una capa fija solo cubría el primer
+   * pantallazo. El grano lleva su tesela y cada una de las dos líneas de la rejilla, la suya.
+   */
   body {
     min-height: 100dvh;
     background-color: var(--foso);
+    background-image: var(--grano), var(--suelo);
+    background-size:
+      var(--grano-tesela) var(--grano-tesela),
+      var(--suelo-paso) var(--suelo-paso),
+      var(--suelo-paso) var(--suelo-paso);
     color: var(--hueso);
     font-family: var(--fuente-texto);
     font-size: var(--cuerpo-base);
     line-height: var(--interlinea-texto);
     -webkit-font-smoothing: antialiased;
-  }
-
-  /* El suelo del foso: rejilla cada 64 px y grano fino, quietos detrás de todo. */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: var(--grano), var(--suelo);
-    background-size:
-      var(--grano-tesela) var(--grano-tesela),
-      var(--suelo-paso) var(--suelo-paso);
   }
 
   :focus-visible {
@@ -124,13 +121,77 @@
   .matricula-caracteres {
     font-variation-settings: var(--placa-ajuste);
   }
+
+  /*
+   * Controles de la navegación del taller. En móvil, icono sobre texto en la barra de abajo; desde
+   * lg, en fila dentro de la cabecera. La página actual lleva una línea de la lámpara: arriba en la
+   * barra de abajo y debajo en la cabecera.
+   */
+  .nav-enlace {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--e1);
+    border-block-start: var(--foco) solid transparent;
+    color: var(--acero);
+
+    @variant lg {
+      flex-direction: row;
+      gap: var(--e2);
+      padding-inline: var(--e3);
+      border-block-start: 0;
+      border-block-end: var(--foco) solid transparent;
+    }
+  }
+
+  .nav-enlace[aria-current='page'] {
+    border-color: var(--lampara);
+    color: var(--hueso);
+  }
+
+  @media (hover: hover) {
+    .nav-enlace:hover {
+      color: var(--hueso);
+    }
+  }
+
+  /*
+   * /proceso: las rondas de una feature, una pieza por revisión en una rejilla que se rellena sola.
+   * La ronda que se abre pasa a ocupar toda la fila para que su evidencia tenga sitio; el marcador
+   * de triángulo del <details> se quita, porque cada pieza dibuja su propia punta de flecha.
+   */
+  .rondas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--pieza-ronda), 1fr));
+    gap: var(--e3);
+  }
+
+  .rondas > li:has(details[open]) {
+    grid-column: 1 / -1;
+  }
+
+  .rondas summary {
+    list-style: none;
+  }
+
+  .rondas summary::-webkit-details-marker {
+    display: none;
+  }
 }
 
-/* Las tarjetas suben del foso escalonadas, como un coche en el elevador. Con movimiento reducido, nada. */
+/*
+ * Las tarjetas suben del foso escalonadas, como un coche en el elevador. Con movimiento reducido,
+ * nada. El retardo tiene tope: la animación puede empezar como mucho cuando aún queda --entrada
+ * para llegar a --aparicion-maxima, así que una columna larga no deja tarjetas esperando.
+ */
 @media (prefers-reduced-motion: no-preference) {
   .entra-del-foso {
     animation: sube-del-foso var(--entrada) var(--curva-salida) both;
-    animation-delay: calc(var(--turno, 0) * var(--escalon));
+    animation-delay: min(
+      calc(var(--turno, 0) * var(--escalon)),
+      calc(var(--aparicion-maxima) - var(--entrada))
+    );
   }
 }
 
