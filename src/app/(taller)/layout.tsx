@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 // El proxy orienta, pero no es la barrera: cada pantalla privada empieza por leerSesion() y, sin
 // sesión, no pinta nada. Cada pantalla (y su loading y su error) abre su propio <main>; el armazón
 // solo pone la navegación. El pie deja sitio a la barra fija de abajo, que en móvil tapa lo que
-// haya detrás.
+// haya detrás. Si leerSesion() falla no se captura aquí: el error sube hasta src/app/error.tsx,
+// porque el error.tsx de este segmento no recoge los fallos de su propio armazón.
 export default async function LayoutDelTaller({ children }: Readonly<{ children: ReactNode }>) {
   const sesion = await leerSesion();
   if (sesion === null) redirect('/login');

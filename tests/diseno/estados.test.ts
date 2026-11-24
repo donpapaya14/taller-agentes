@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const APP = resolve(import.meta.dirname, '../../src/app');
@@ -33,6 +33,39 @@ function pantallasSinEstado(app: string): string[] {
       (estado) => `${SEGMENTO_PRIVADO}/${pagina}: falta ${estado}`,
     ),
   );
+}
+
+// Next recoge el fallo de una página y el de los layouts que cuelgan de un segmento con el error.tsx
+// de ese segmento o de uno por encima. El error.tsx de un segmento no recoge el fallo de su propio
+// layout: ese solo lo recoge el de un segmento superior.
+
+// «(taller)/tablero» da «(taller)/tablero», «(taller)» y «.»: de la carpeta a la raíz de app.
+function carpetasHastaLaRaiz(carpeta: string): string[] {
+  return carpeta === '.' ? ['.'] : [carpeta, ...carpetasHastaLaRaiz(dirname(carpeta))];
+}
+
+const hayErrorEn = (app: string, carpetas: string[]) =>
+  carpetas.some((carpeta) => existsSync(join(app, carpeta, 'error.tsx')));
+
+/** «ruta: ...» por cada página y cada layout anidado cuyo fallo no recoge ningún error.tsx. */
+function sinPantallaDeError(app: string): string[] {
+  return readdirSync(app, { recursive: true, encoding: 'utf8' })
+    .flatMap((ruta) => {
+      const carpetas = carpetasHastaLaRaiz(dirname(ruta));
+      if (basename(ruta) === 'page.tsx' && !hayErrorEn(app, carpetas)) {
+        return [`${ruta}: ningún error.tsx recoge sus fallos`];
+      }
+      // El layout raíz no tiene nada por encima: lo cubre global-error.tsx, no un error.tsx.
+      if (
+        basename(ruta) === 'layout.tsx' &&
+        carpetas.length > 1 &&
+        !hayErrorEn(app, carpetas.slice(1))
+      ) {
+        return [`${ruta}: ningún error.tsx por encima recoge sus fallos`];
+      }
+      return [];
+    })
+    .sort();
 }
 
 const temporales: string[] = [];
@@ -94,5 +127,41 @@ describe('estados de las pantallas privadas', () => {
 
   it('[C-15][D-11] una página que no está en (taller) no se pide', () => {
     expect(pantallasSinEstado(arbol('proceso/page.tsx', 'login/page.tsx', 'page.tsx'))).toEqual([]);
+  });
+});
+
+describe('pantalla de error por encima de cada armazón y de cada página', () => {
+  it('[D-14] el fallo de cada página y de cada armazón de src/app lo recoge un error.tsx', () => {
+    expect(sinPantallaDeError(APP)).toEqual([]);
+  });
+
+  it('[D-14] el error.tsx del propio segmento no recoge el fallo de su armazón', () => {
+    const app = arbol('layout.tsx', '(taller)/layout.tsx', '(taller)/error.tsx');
+
+    expect(sinPantallaDeError(app)).toEqual([
+      '(taller)/layout.tsx: ningún error.tsx por encima recoge sus fallos',
+    ]);
+  });
+
+  it('[D-14] un error.tsx en la raíz recoge el armazón del segmento y la portada', () => {
+    const app = arbol(
+      'error.tsx',
+      'layout.tsx',
+      'page.tsx',
+      '(taller)/layout.tsx',
+      '(taller)/error.tsx',
+      '(taller)/tablero/page.tsx',
+    );
+
+    expect(sinPantallaDeError(app)).toEqual([]);
+  });
+
+  it('[D-14] se señala la página que no tiene ningún error.tsx en su camino, también la portada', () => {
+    const app = arbol('layout.tsx', 'page.tsx', 'login/page.tsx');
+
+    expect(sinPantallaDeError(app)).toEqual([
+      'login/page.tsx: ningún error.tsx recoge sus fallos',
+      'page.tsx: ningún error.tsx recoge sus fallos',
+    ]);
   });
 });
