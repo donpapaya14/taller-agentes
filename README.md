@@ -47,7 +47,7 @@ El protocolo de ronda, para cada feature:
 
 ## Dónde están las rondas
 
-- `proceso/<feature>/ronda-<N>.json`: el informe de cada ronda, tal como lo escribió Testing. No se editan después.
+- `proceso/<feature>/ronda-<N>.json`: el informe de cada ronda, tal como lo escribió Testing. No se editan después: la única edición fue sustituir los hashes de commit tras limpiar el historial, antes de publicarlo, sin cambiar veredictos ni el resto del texto.
 - `proceso/features.json`: las doce features del plan y su estado.
 - `/proceso`: esas mismas rondas en la app, con veredicto, directriz incumplida, evidencia y commit.
 - El historial de git: los commits `test(<feature>): ronda N` de Testing y `fix(<feature>): … [ronda N]` de Develop.
@@ -107,6 +107,7 @@ La base de datos sale de `supabase/migrations`: con Docker, `supabase start` y `
 - Sin IA dentro de la app ni servicios de pago; sin registro público: los usuarios son los de la demostración.
 - Sin pantallas de clientes y vehículos (se crean dentro de «Nueva orden»), sin arrastrar y soltar (la orden avanza con un botón), sin agenda, informes, exportaciones, modo sin conexión ni varios idiomas.
 - La factura no tiene validez fiscal. WhatsApp solo abre `wa.me` con el mensaje escrito; no envía.
+- Los teléfonos y NIF de la demo son inventados: «Avisar por WhatsApp» abre `wa.me` con el mensaje preparado y no lo envíes, porque un número inventado puede ser de una persona real.
 - No registra la causa de los fallos esperados: la regla `no-console` está activa y relajarla exige una línea `UMBRAL:` autorizada en el SPEC. En el cron, el PDF y «Restablecer la demo» solo se cuentan con un motivo en español los fallos esperados (errores de Supabase con código y de validación); los demás los relanzan y los registra Vercel. Las acciones que escriben (tablero, orden, nueva orden y recambios) capturan cualquier fallo y lo cuentan con un motivo en español, sin registrarlo.
 - «Restablecer la demo» es público (cualquiera puede reiniciarla, como mucho una vez cada 10 minutos); los listados no se paginan.
 - El PDF usa la fuente estándar Helvetica: una letra fuera de Latin-1 (cirílico, `ł`) sale como «?».

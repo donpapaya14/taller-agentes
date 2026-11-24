@@ -120,6 +120,27 @@ describe('README: lo que cuenta con honestidad', () => {
   });
 });
 
+describe('README: lo que avisa a quien lo prueba y lo lee', () => {
+  // Las rondas se publicaron con otros hashes: se limpió el historial antes de hacerlo público y
+  // hubo que poner los nuevos. Es la única edición y los dos textos que dicen «no se editan» la cuentan.
+  it.each(['README.md', 'proceso/LEEME.md'])(
+    '[P-6] %s cuenta que la única edición de las rondas fue sustituir hashes de commit',
+    (archivo) => {
+      const texto = leer(archivo);
+
+      expect(texto).toContain('sustituir los hashes de commit');
+      expect(texto).toContain('sin cambiar veredictos');
+    },
+  );
+
+  it('[P-6] avisa de que los teléfonos y NIF de la demo son inventados y de que no se envíe el WhatsApp', () => {
+    const limites = seccionDe(leer('README.md'), 'Qué no hace')?.texto ?? '';
+
+    expect(limites).toContain('teléfonos y NIF de la demo son inventados');
+    expect(limites).toContain('no lo envíes');
+  });
+});
+
 describe('entrega', () => {
   it.each(['README.md', 'docs/ENTREGA.md'])('[P-6] %s reserva las cuatro preguntas', (archivo) => {
     const preguntas = seccionDe(leer(archivo), /cuatro preguntas/i);
