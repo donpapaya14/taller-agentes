@@ -2,19 +2,25 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorDeEntorno } from '@/adaptadores/supabase/entorno';
+import { PLAZO_TOTAL_MS } from '@/adaptadores/supabase/tiempo-limite';
 import { USUARIOS_DEMO } from '@/aplicacion/acceso';
-import { entrar, entrarComoDemo, salir } from './acciones';
+import { entrar, entrarComoDemo, restablecer, salir } from './acciones';
 
-const { cliente, crearClienteServidor, redirect } = vi.hoisted(() => ({
-  cliente: { auth: { signInWithPassword: vi.fn(), signOut: vi.fn() } },
-  crearClienteServidor: vi.fn(),
-  redirect: vi.fn(),
-}));
+const { cliente, crearClienteServidor, redirect, rpcRestablecer, reponerContrasenas } = vi.hoisted(
+  () => ({
+    cliente: { auth: { signInWithPassword: vi.fn(), signOut: vi.fn() } },
+    crearClienteServidor: vi.fn(),
+    redirect: vi.fn(),
+    rpcRestablecer: vi.fn(),
+    reponerContrasenas: vi.fn(),
+  }),
+);
 
 // `server-only` lanza fuera de un componente de servidor de Next; aquí solo hay que dejarlo pasar.
 vi.mock('server-only', () => ({}));
 vi.mock('next/navigation', () => ({ redirect }));
 vi.mock('@/adaptadores/supabase/cliente-servidor', () => ({ crearClienteServidor }));
+vi.mock('@/adaptadores/supabase/demo', () => ({ rpcRestablecer, reponerContrasenas }));
 
 const CORREO = 'jefe@tallerdemo.example';
 const CONTRASENA = 'contraseña de prueba';
@@ -57,12 +63,14 @@ beforeEach(() => {
   crearClienteServidor.mockResolvedValue(cliente);
   cliente.auth.signInWithPassword.mockResolvedValue({ error: null });
   cliente.auth.signOut.mockResolvedValue({ error: null });
+  reponerContrasenas.mockResolvedValue(undefined);
   redirect.mockImplementation((destino: string) => {
     throw new Error(`REDIRIGE:${destino}`);
   });
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.resetAllMocks();
 });
@@ -191,6 +199,73 @@ describe('entrarComoDemo: cuando algo falla', () => {
     ];
 
     expect(destinos.filter((destino) => destino.includes(CONTRASENA_DE_DEMO))).toEqual([]);
+  });
+});
+
+// Quien pulsa «Restablecer la demo» no ha entrado: la respuesta le dice qué pasó, pero nunca qué
+// variable falta ni qué dijo la base de datos.
+describe('restablecer', () => {
+  it('[C-13] con la base restablecida repone las contraseñas y dice que ya puede entrar', async () => {
+    rpcRestablecer.mockResolvedValue('RESTABLECIDO');
+
+    expect(await restablecer()).toEqual({
+      tipo: 'ok',
+      texto: 'Demo restablecida. Ya puedes entrar',
+    });
+    expect(reponerContrasenas).toHaveBeenCalledWith(
+      Object.values(USUARIOS_DEMO),
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('[C-13] con un restablecimiento reciente dice que pruebe a entrar y repone igualmente las contraseñas', async () => {
+    rpcRestablecer.mockResolvedValue('EN_ESPERA');
+
+    expect(await restablecer()).toEqual({
+      tipo: 'ok',
+      texto: 'La demo se restableció hace menos de 10 minutos. Prueba a entrar',
+    });
+    expect(reponerContrasenas).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('restablecer: cuando algo falla', () => {
+  const MOTIVO = 'No se pudo restablecer la demo';
+
+  it.each([
+    [
+      'la base de datos falla',
+      () => rpcRestablecer.mockRejectedValue(new Error('connection refused')),
+    ],
+    [
+      'faltan las variables de entorno',
+      () => rpcRestablecer.mockRejectedValue(new ErrorDeEntorno('Falta SUPABASE_SECRET_KEY')),
+    ],
+    [
+      'no se pueden reponer las contraseñas',
+      () => {
+        rpcRestablecer.mockResolvedValue('RESTABLECIDO');
+        reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
+      },
+    ],
+  ])('[C-13][D-14] si %s, dice el motivo sin el detalle', async (_caso, preparar) => {
+    preparar();
+
+    expect(await restablecer()).toEqual({ tipo: 'error', texto: MOTIVO });
+  });
+
+  it('[C-13][D-14] si Supabase no contesta a tiempo, lo dice y no se queda esperando', async () => {
+    vi.useFakeTimers();
+    rpcRestablecer.mockReturnValue(new Promise(() => undefined));
+
+    const resultado = restablecer();
+    await vi.advanceTimersByTimeAsync(PLAZO_TOTAL_MS);
+
+    expect(await resultado).toEqual({
+      tipo: 'error',
+      texto: 'La base de datos no contestó a tiempo',
+    });
+    expect(reponerContrasenas).not.toHaveBeenCalled();
   });
 });
 

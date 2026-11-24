@@ -165,6 +165,34 @@ describe('validarNuevaOrden, descripción', () => {
   ])('[C-11][D-2] rechaza %s', (_nombre, descripcion) => {
     expect(conDescripcion(descripcion)).toEqual(fallo({ descripcion: MENSAJES.descripcion }));
   });
+
+  // maxlength cuenta un salto de línea como un carácter, pero el navegador manda el textarea con
+  // \r\n: sin igualarlos, una descripción que el formulario dejó escribir se rechazaría en el servidor.
+  it.each([
+    ['\r\n (lo que manda el navegador)', '\r\n'],
+    ['\r (los Mac antiguos)', '\r'],
+    ['\n', '\n'],
+  ])(
+    '[C-11] un salto de línea %s cuenta como un carácter y se guarda como \\n',
+    (_nombre, salto) => {
+      const quince = `${'a'.repeat(480)}${salto.repeat(15)}b`;
+
+      expect(conDescripcion(quince)).toEqual({
+        ok: true,
+        datos: { ...VEHICULO_EXISTENTE, descripcion: `${'a'.repeat(480)}${'\n'.repeat(15)}b` },
+      });
+    },
+  );
+
+  it.each([
+    ['por arriba', `${'a'.repeat(499)}\r\nb`],
+    ['por abajo', 'a\r\nbc'],
+  ])(
+    '[C-11][D-2] con saltos de línea sigue rechazando lo que se pasa o se queda corto %s',
+    (_caso, texto) => {
+      expect(conDescripcion(texto)).toEqual(fallo({ descripcion: MENSAJES.descripcion }));
+    },
+  );
 });
 
 describe('validarNuevaOrden, entrada que no es un formulario', () => {

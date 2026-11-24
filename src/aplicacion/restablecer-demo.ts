@@ -15,13 +15,14 @@ const MOTIVO_DEL_ERROR = 'No se pudo restablecer la demo';
 // decidir nada con ello: un valor que no es ninguno de los dos no se toma por «restablecido».
 const respuestaDeLaBase = z.enum(['RESTABLECIDO', 'EN_ESPERA']);
 
-// Las contraseñas solo se reponen si la base de datos acaba de restablecerse: con la espera de 10
-// minutos no ha cambiado nada y no hay nada que reponer. Cualquier fallo, también el de reponerlas,
-// sale con el mismo mensaje: el detalle es de quien opera la demo, no de quien la pide.
+// Las contraseñas se reponen siempre que la base responda bien, también con la espera de 10
+// minutos: reponerlas no destruye nada y así se recupera un intento anterior en el que la base ya
+// se había restablecido y las contraseñas no. Cualquier fallo, también el de reponerlas, sale con
+// el mismo mensaje: el detalle es de quien opera la demo, no de quien la pide.
 export async function restablecerDemo(puerto: Puerto): Promise<ResultadoRestablecer> {
   try {
     const estado = respuestaDeLaBase.parse(await puerto.rpcRestablecer());
-    if (estado === 'RESTABLECIDO') await puerto.reponerContrasenas();
+    await puerto.reponerContrasenas();
     return { estado };
   } catch {
     return { estado: 'ERROR', motivo: MOTIVO_DEL_ERROR };

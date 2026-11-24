@@ -70,6 +70,63 @@ describe('proxy', () => {
   });
 });
 
+// Una acción de servidor llega como POST: con JavaScript lleva la cabecera next-action; sin él, es un
+// formulario normal. Redirigirla a /login la reenviaría como POST a una página que no tiene esa
+// acción, y quien tenía la sesión caducada vería la pantalla de error en vez del acceso.
+describe('proxy ante una acción de servidor', () => {
+  const POST = (ruta: string, cabeceras: Record<string, string> = {}) =>
+    new NextRequest(`http://localhost${ruta}`, { method: 'POST', headers: cabeceras });
+
+  const ACCION = { 'next-action': '7f1c2d3e4b5a69788796a5b4c3d2e1f0a9b8c7d6e5' };
+
+  it.each([
+    ['con JavaScript', ACCION],
+    ['sin JavaScript', {}],
+  ])(
+    '[C-1] %s, una acción sin sesión sigue su camino: la acción pide la sesión y manda a /login',
+    async (_caso, cabeceras) => {
+      refrescarSesion.mockResolvedValue(sesion(false));
+
+      const respuesta = await proxy(POST('/tablero', cabeceras));
+
+      expect(respuesta.status).toBe(200);
+      expect(respuesta.headers.get('x-middleware-next')).toBe('1');
+    },
+  );
+
+  it('[C-1] con sesión, una acción lanzada desde /login tampoco se redirige a /tablero', async () => {
+    refrescarSesion.mockResolvedValue(sesion(true));
+
+    const respuesta = await proxy(POST('/login', ACCION));
+
+    expect(respuesta.headers.get('x-middleware-next')).toBe('1');
+    expect(respuesta.headers.get('location')).toBeNull();
+  });
+
+  it('la sesión renovada viaja también en la respuesta de una acción', async () => {
+    refrescarSesion.mockResolvedValue(sesionRenovada);
+
+    const respuesta = await proxy(POST('/tablero', ACCION));
+
+    expect(respuesta.cookies.get('sb-sesion')?.value).toBe('nueva');
+    expect(respuesta.headers.get('cache-control')).toBe('private, no-store');
+  });
+
+  it.each(['GET', 'HEAD'])(
+    '[C-1] una petición %s sin sesión a una ruta privada se sigue orientando',
+    async (metodo) => {
+      refrescarSesion.mockResolvedValue(sesion(false));
+
+      const respuesta = await proxy(
+        new NextRequest('http://localhost/tablero', { method: metodo }),
+      );
+
+      expect(respuesta.status).toBe(307);
+      expect(respuesta.headers.get('location')).toBe('http://localhost/login');
+    },
+  );
+});
+
 describe('proxy sin el entorno de Supabase', () => {
   const sinEntorno = () =>
     refrescarSesion.mockRejectedValue(

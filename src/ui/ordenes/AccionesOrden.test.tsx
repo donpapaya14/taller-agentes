@@ -105,6 +105,18 @@ describe('AccionesOrden: entregar', () => {
     expect(accionEntregar.mock.calls[0][0].get('id')).toBe(ID);
   });
 
+  // Una segunda entrega encontraría la orden ya entregada y acabaría en un aviso de error.
+  it('[D-13] mientras entrega, Entregar queda desactivado para no enviar dos veces', async () => {
+    const accionEntregar = vi.fn(() => new Promise<void>(() => undefined));
+    render(<AccionesOrden {...props({ accionEntregar })} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Entregar' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Entregar' }).hasAttribute('disabled')).toBe(true),
+    );
+  });
+
   it.each([
     ['con teléfono', ENLACE],
     ['sin teléfono', null],

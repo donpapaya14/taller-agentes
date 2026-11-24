@@ -22,13 +22,13 @@ function puertoQueResponde(respuesta: unknown) {
 }
 
 describe('restablecerDemo', () => {
-  it('[C-13] solo repone contraseñas si se restableció', async () => {
+  it('[C-13] con la base en espera repone igualmente las contraseñas', async () => {
     const { puerto, reponerContrasenas } = puertoQueResponde('EN_ESPERA');
 
     const resultado = await restablecerDemo(puerto);
 
     expect(resultado).toEqual({ estado: 'EN_ESPERA' });
-    expect(reponerContrasenas).not.toHaveBeenCalled();
+    expect(reponerContrasenas).toHaveBeenCalledTimes(1);
   });
 
   it('[C-13] restablecido repone contraseñas', async () => {
@@ -38,6 +38,17 @@ describe('restablecerDemo', () => {
 
     expect(resultado).toEqual({ estado: 'RESTABLECIDO' });
     expect(reponerContrasenas).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('restablecerDemo: cuando algo falla', () => {
+  it('[C-13][D-14] con la base en espera, si no se pueden reponer las contraseñas devuelve ERROR con mensaje', async () => {
+    const { puerto, reponerContrasenas } = puertoQueResponde('EN_ESPERA');
+    reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
+
+    const resultado = await restablecerDemo(puerto);
+
+    expect(resultado).toEqual({ estado: 'ERROR', motivo: MOTIVO });
   });
 
   it('[C-13][D-14] si la base de datos falla devuelve ERROR con mensaje', async () => {
