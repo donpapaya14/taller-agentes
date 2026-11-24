@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ErrorDeEntorno } from './entorno';
-import { leerEntornoSecreto } from './entorno-secreto';
+import { leerCronSecret, leerEntornoSecreto } from './entorno-secreto';
 
 // `server-only` lanza fuera de un componente de servidor de Next; aquí solo hay que dejarlo pasar.
 vi.mock('server-only', () => ({}));
@@ -54,5 +54,29 @@ describe('leerEntornoSecreto', () => {
       cronSecret: 'secreto del cron',
       demoPassword: 'contraseña de prueba',
     });
+  });
+});
+
+// El cron decide quién es de fiar con este secreto antes de mirar el resto del entorno: leerlo no
+// puede exigir las demás variables, o un entorno a medias contaría sus faltas a cualquiera.
+describe('leerCronSecret', () => {
+  it('[D-2] devuelve el secreto sin pedir ninguna otra variable', () => {
+    expect(leerCronSecret({ CRON_SECRET: ENTORNO_COMPLETO.CRON_SECRET })).toBe(
+      ENTORNO_COMPLETO.CRON_SECRET,
+    );
+  });
+
+  it('[D-2] ausente, vacío o en blanco es null: sin secreto no hay quien sea de fiar', () => {
+    expect(leerCronSecret({})).toBeNull();
+    expect(leerCronSecret({ CRON_SECRET: undefined })).toBeNull();
+    expect(leerCronSecret({ CRON_SECRET: '' })).toBeNull();
+    expect(leerCronSecret({ CRON_SECRET: '   ' })).toBeNull();
+  });
+
+  it('[D-2] recorta los espacios de los bordes y da el mismo valor que leerEntornoSecreto', () => {
+    const entorno = { ...ENTORNO_COMPLETO, CRON_SECRET: '\tsecreto del cron ' };
+
+    expect(leerCronSecret(entorno)).toBe('secreto del cron');
+    expect(leerCronSecret(entorno)).toBe(leerEntornoSecreto(entorno).cronSecret);
   });
 });

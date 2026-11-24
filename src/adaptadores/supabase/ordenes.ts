@@ -30,6 +30,7 @@ type NuevaOrden = { descripcion: string } & ({ vehiculoId: string } | VehiculoNu
 const DIAS_DE_ENTREGADAS = 7;
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
 const VIOLACION_DE_UNICIDAD = '23505';
+const INTERBLOQUEO = '40P01';
 
 // Lo que falla por dentro (red, permisos, SQL) no le sirve a quien usa la pantalla: se le dice qué
 // no se pudo hacer y que lo reintente.
@@ -42,9 +43,27 @@ const MENSAJES = {
   mover: 'No se pudo mover la orden. Inténtalo de nuevo.',
   manoObra: 'No se pudo guardar la mano de obra. Inténtalo de nuevo.',
   anadir: 'No se pudo añadir el recambio. Inténtalo de nuevo.',
+  cantidad: 'No se pudo cambiar la cantidad. Inténtalo de nuevo.',
   quitar: 'No se pudo quitar el recambio. Inténtalo de nuevo.',
   sinNumero: 'La base de datos no devolvió el número de factura',
 };
+
+// La pantalla de nueva orden dice este fallo junto al campo de la matrícula, y para eso lo distingue
+// de los demás, que no son más que «no se pudo».
+export class MatriculaRepetida extends Error {
+  constructor() {
+    super(MENSAJES.matriculaRepetida);
+  }
+}
+
+// Lo que Postgres responde por su cuenta al cerrar una orden, con su mensaje en inglés: el
+// interbloqueo de dos entregas a la vez y la clave repetida del número de factura (el contador de
+// facturas desajustado). Se les da un nombre, como a los errores que lanza `cerrar_orden`, para que
+// el caso de uso los traduzca. Es un Map: una clave como «constructor» no encuentra nada heredado.
+const ERRORES_DE_POSTGRES_AL_CERRAR = new Map([
+  [INTERBLOQUEO, 'INTERBLOQUEO'],
+  [VIOLACION_DE_UNICIDAD, 'NUMERO_REPETIDO'],
+]);
 
 const NUMERO_DE_FACTURA = z.string().min(1);
 
@@ -93,8 +112,15 @@ export async function listarVehiculos(): Promise<
   return leerFilas(z.array(filaVehiculo), data, 'los vehículos');
 }
 
-async function insertar(cliente: SupabaseClient, tabla: string, fila: object): Promise<string> {
+// `repetida` es el error de una clave repetida, si esa tabla tiene alguna que pueda repetirse.
+async function insertar(
+  cliente: SupabaseClient,
+  tabla: string,
+  fila: object,
+  repetida?: () => Error,
+): Promise<string> {
   const { data, error } = await cliente.from(tabla).insert(fila).select('id').single();
+  if (error?.code === VIOLACION_DE_UNICIDAD && repetida) throw repetida();
   if (error) throw new Error(MENSAJES.crear);
 
   return leerFilas(filaId, data, 'lo que se acaba de crear').id;
@@ -112,22 +138,27 @@ async function crearVehiculoNuevo(
     .eq('matricula', d.matricula)
     .maybeSingle();
   if (error) throw new Error(MENSAJES.crear);
-  if (leerFilas(filaId.nullable(), data, 'los vehículos') !== null) {
-    throw new Error(MENSAJES.matriculaRepetida);
-  }
+  if (leerFilas(filaId.nullable(), data, 'los vehículos') !== null) throw new MatriculaRepetida();
 
   const clienteId = await insertar(cliente, 'clientes', {
     taller_id: tallerId,
     nombre: d.clienteNombre,
     telefono: d.clienteTelefono,
   });
-  return insertar(cliente, 'vehiculos', {
-    taller_id: tallerId,
-    cliente_id: clienteId,
-    matricula: d.matricula,
-    marca: d.marca,
-    modelo: d.modelo,
-  });
+  // Otra persona pudo crear la misma matrícula entre la comprobación de arriba y este insert: la
+  // clave única de Postgres lo rechaza y se dice lo mismo.
+  return insertar(
+    cliente,
+    'vehiculos',
+    {
+      taller_id: tallerId,
+      cliente_id: clienteId,
+      matricula: d.matricula,
+      marca: d.marca,
+      modelo: d.modelo,
+    },
+    () => new MatriculaRepetida(),
+  );
 }
 
 // Con un vehículo nuevo crea también su cliente. Son inserciones sueltas, no una transacción: si
@@ -193,6 +224,20 @@ export async function anadirLinea(d: {
   return true;
 }
 
+// El precio no cambia: es el que tenía el recambio al añadirlo. False si la línea ya no está o la
+// orden ya se entregó (la política de RLS no la deja ver para cambiarla).
+export async function cambiarCantidad(lineaId: string, cantidad: number): Promise<boolean> {
+  const cliente = await crearClienteServidor();
+  const { data, error } = await cliente
+    .from('orden_lineas')
+    .update({ cantidad })
+    .eq('id', lineaId)
+    .select('id');
+  if (error) throw new Error(MENSAJES.cantidad);
+
+  return algunaFilaTocada(data);
+}
+
 export async function quitarLinea(lineaId: string): Promise<boolean> {
   const cliente = await crearClienteServidor();
   const { data, error } = await cliente
@@ -205,12 +250,13 @@ export async function quitarLinea(lineaId: string): Promise<boolean> {
   return algunaFilaTocada(data);
 }
 
-// El error es el mensaje de la excepción de Postgres tal cual (SOLO_JEFE, STOCK_INSUFICIENTE:…):
-// el caso de uso es quien lo traduce.
+// El error es el mensaje de la excepción de Postgres tal cual (SOLO_JEFE, STOCK_INSUFICIENTE:…) o,
+// para los dos que Postgres da por su cuenta, su nombre (INTERBLOQUEO, NUMERO_REPETIDO): el caso de
+// uso es quien lo traduce.
 export async function rpcCerrar(id: string): Promise<{ numero: string } | { error: string }> {
   const cliente = await crearClienteServidor();
   const { data, error } = await cliente.rpc('cerrar_orden', { p_orden: id });
-  if (error) return { error: error.message };
+  if (error) return { error: ERRORES_DE_POSTGRES_AL_CERRAR.get(error.code) ?? error.message };
 
   const numero = NUMERO_DE_FACTURA.safeParse(data);
   return numero.success ? { numero: numero.data } : { error: MENSAJES.sinNumero };

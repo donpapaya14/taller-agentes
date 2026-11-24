@@ -28,6 +28,14 @@ const MENSAJES = {
   vehiculoId: 'Elige un vehículo',
 };
 
+// Los textos del vehículo y del cliente caben en una tarjeta del tablero y en una columna de la
+// base de datos: más largos no son una marca, un modelo ni un nombre.
+const TOPES = {
+  marca: { largo: 40, mensaje: 'La marca tiene como máximo 40 caracteres' },
+  modelo: { largo: 40, mensaje: 'El modelo tiene como máximo 40 caracteres' },
+  clienteNombre: { largo: 80, mensaje: 'El nombre tiene como máximo 80 caracteres' },
+};
+
 const SOLO_CIFRAS = /^\d+$/;
 
 // El tope de un campo al que el bloque no pone ninguno: más allá no habría un entero exacto.
@@ -56,8 +64,13 @@ export function validar<S extends z.ZodType>(
   return { ok: false, errores: erroresDe(resultado.error) };
 }
 
-export const textoEntre = (minimo: number, maximo: number, mensaje: string) =>
-  z.string({ error: mensaje }).trim().min(minimo, mensaje).max(maximo, mensaje);
+// Un mismo mensaje para quedarse corto y pasarse, salvo que se dé otro para pasarse.
+export const textoEntre = (
+  minimo: number,
+  maximo: number,
+  mensaje: string,
+  mensajeSiSePasa: string = mensaje,
+) => z.string({ error: mensaje }).trim().min(minimo, mensaje).max(maximo, mensajeSiSePasa);
 
 // Un entero escrito en un formulario llega como texto: vale el número o el texto de solo cifras.
 export const enteroEntre = (minimo: number, maximo: number, mensaje: string) =>
@@ -82,9 +95,14 @@ const conVehiculoExistente = z.object({
 const conVehiculoNuevo = z.object({
   descripcion: textoEntre(5, 500, MENSAJES.descripcion),
   matricula: normalizado(normalizarMatricula, MENSAJES.matricula),
-  marca: textoEntre(1, SIN_LIMITE, MENSAJES.marca),
-  modelo: textoEntre(1, SIN_LIMITE, MENSAJES.modelo),
-  clienteNombre: textoEntre(1, SIN_LIMITE, MENSAJES.clienteNombre),
+  marca: textoEntre(1, TOPES.marca.largo, MENSAJES.marca, TOPES.marca.mensaje),
+  modelo: textoEntre(1, TOPES.modelo.largo, MENSAJES.modelo, TOPES.modelo.mensaje),
+  clienteNombre: textoEntre(
+    1,
+    TOPES.clienteNombre.largo,
+    MENSAJES.clienteNombre,
+    TOPES.clienteNombre.mensaje,
+  ),
   clienteTelefono: normalizado(normalizarTelefono, MENSAJES.clienteTelefono),
 });
 

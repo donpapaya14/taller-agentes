@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fetchQueNuncaResuelve } from '../../../tests/apoyo/fetch-falso';
 import {
   conPlazoTotal,
   conTiempoLimite,
@@ -9,14 +10,6 @@ import {
 } from './tiempo-limite';
 
 const URL_DE_PRUEBA = 'https://proyecto.example/auth/v1/user';
-
-// Como el fetch de verdad: no contesta nunca, salvo que lo aborte su señal (también si ya venía abortada).
-const fetchQueNuncaResuelve: typeof fetch = (_entrada, opciones) =>
-  new Promise((_resolver, rechazar) => {
-    const corte = opciones?.signal;
-    if (corte?.aborted) rechazar(corte.reason);
-    corte?.addEventListener('abort', () => rechazar(corte.reason));
-  });
 
 const fetchQueResponde = () => vi.fn<typeof fetch>().mockResolvedValue(new Response('ok'));
 

@@ -7,7 +7,14 @@ import {
   type Llamada,
 } from '../../../tests/apoyo/cliente-falso';
 import { ID_LINEA, ID_ORDEN, ID_RECAMBIO, ID_TALLER } from '../../../tests/apoyo/filas-de-ejemplo';
-import { anadirLinea, cambiarEstado, guardarManoObra, quitarLinea, rpcCerrar } from './ordenes';
+import {
+  anadirLinea,
+  cambiarCantidad,
+  cambiarEstado,
+  guardarManoObra,
+  quitarLinea,
+  rpcCerrar,
+} from './ordenes';
 
 vi.mock('./cliente-servidor', () =>
   import('../../../tests/apoyo/cliente-falso').then((modulo) => modulo.clienteServidorFalso),
@@ -17,7 +24,7 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-// Los tres cambios que dicen true si tocaron una fila y false si no: lo que piden a Postgres y el
+// Los cuatro cambios que dicen true si tocaron una fila y false si no: lo que piden a Postgres y el
 // mensaje con el que fallan.
 const CAMBIOS: [string, () => Promise<boolean>, Llamada[], string][] = [
   [
@@ -42,6 +49,17 @@ const CAMBIOS: [string, () => Promise<boolean>, Llamada[], string][] = [
       ['select', 'id'],
     ],
     'No se pudo guardar la mano de obra. Inténtalo de nuevo.',
+  ],
+  [
+    'cambiarCantidad',
+    () => cambiarCantidad(ID_LINEA, 4),
+    [
+      ['from', 'orden_lineas'],
+      ['update', { cantidad: 4 }],
+      ['eq', 'id', ID_LINEA],
+      ['select', 'id'],
+    ],
+    'No se pudo cambiar la cantidad. Inténtalo de nuevo.',
   ],
   [
     'quitarLinea',
@@ -138,6 +156,30 @@ describe('rpcCerrar', () => {
     preparar(mal('STOCK_INSUFICIENTE:FIL-01', 'P0001'));
 
     expect(await rpcCerrar(ID_ORDEN)).toEqual({ error: 'STOCK_INSUFICIENTE:FIL-01' });
+  });
+
+  // Postgres da el interbloqueo (40P01) y la clave repetida del número de factura (23505) con
+  // mensajes en inglés y de su cosecha: se les da un nombre para que el caso de uso los traduzca.
+  it('[C-5][D-14] el interbloqueo de dos entregas a la vez sale con su nombre', async () => {
+    preparar(mal('deadlock detected', '40P01'));
+
+    expect(await rpcCerrar(ID_ORDEN)).toEqual({ error: 'INTERBLOQUEO' });
+  });
+
+  it('[C-5][D-14] la clave repetida del número de factura sale con su nombre', async () => {
+    preparar(
+      mal('duplicate key value violates unique constraint "ordenes_numero_factura"', '23505'),
+    );
+
+    expect(await rpcCerrar(ID_ORDEN)).toEqual({ error: 'NUMERO_REPETIDO' });
+  });
+
+  it('[C-5][D-14] un error sin código conocido sigue saliendo con su mensaje', async () => {
+    preparar(mal('canceling statement due to statement timeout', '57014'));
+
+    expect(await rpcCerrar(ID_ORDEN)).toEqual({
+      error: 'canceling statement due to statement timeout',
+    });
   });
 
   it.each([

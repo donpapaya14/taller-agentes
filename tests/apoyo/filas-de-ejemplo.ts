@@ -1,3 +1,5 @@
+import { filaOrdenDetalle, type OrdenDetalle, type OrdenResumen } from '@/adaptadores/supabase/filas';
+
 // Filas como las devuelve PostgREST (columnas en snake_case y tablas relacionadas anidadas) y lo
 // que la aplicación espera recibir de ellas. Las comparten los tests de los adaptadores.
 
@@ -47,7 +49,7 @@ export const FILA_RECAMBIO = {
 
 export const FILA_VEHICULO = { id: ID_ORDEN, matricula: '1234BCD', marca: 'Seat', modelo: 'Ibiza' };
 
-export const ORDEN_RESUMEN = {
+export const ORDEN_RESUMEN: OrdenResumen = {
   id: ID_ORDEN,
   estado: 'en_reparacion',
   descripcion: 'Cambio de aceite',
@@ -65,3 +67,6 @@ export const RECAMBIO = {
   stock: 5,
   stockMinimo: 2,
 };
+
+// La orden entera, como la lee `leerOrden`: la fila FILA_DETALLE ya adaptada.
+export const ORDEN_DETALLE: OrdenDetalle = filaOrdenDetalle.parse(FILA_DETALLE);

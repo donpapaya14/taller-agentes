@@ -38,6 +38,7 @@ beforeEach(() => {
     listUsers: vi.fn(),
     updateUserById: vi.fn().mockResolvedValue({ data: {}, error: null }),
   };
+  crearClienteSecreto.mockClear();
   crearClienteSecreto.mockReturnValue({
     rpc: cliente.rpc,
     auth: { admin: { listUsers: cliente.listUsers, updateUserById: cliente.updateUserById } },
@@ -58,6 +59,24 @@ describe('rpcRestablecer', () => {
     cliente.rpc.mockResolvedValue({ data: null, error: { message: 'permission denied' } });
 
     await expect(rpcRestablecer()).rejects.toThrow('permission denied');
+  });
+
+  // El plazo es el de la operación entera: el cliente lo recibe para no seguir esperando pasado él.
+  it('[D-14] el cliente secreto se crea con el plazo de la operación', async () => {
+    cliente.rpc.mockResolvedValue({ data: 'RESTABLECIDO', error: null });
+    const plazo = new AbortController().signal;
+
+    await rpcRestablecer(plazo);
+
+    expect(crearClienteSecreto).toHaveBeenCalledExactlyOnceWith(plazo);
+  });
+
+  it('[D-14] sin plazo se crea con el límite de cada llamada y nada más', async () => {
+    cliente.rpc.mockResolvedValue({ data: 'RESTABLECIDO', error: null });
+
+    await rpcRestablecer();
+
+    expect(crearClienteSecreto).toHaveBeenCalledExactlyOnceWith(undefined);
   });
 
   it.each([null, undefined, 42, {}, ['RESTABLECIDO']])(
@@ -176,4 +195,17 @@ describe('reponerContrasenas: entrada basura', () => {
       expect(cliente.updateUserById).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('reponerContrasenas: el plazo', () => {
+  it('[D-14] el cliente secreto se crea con el plazo de la operación', async () => {
+    cliente.listUsers.mockResolvedValue(
+      pagina(CORREOS.map((correo, i) => usuario(`d-${i}`, correo))),
+    );
+    const plazo = new AbortController().signal;
+
+    await reponerContrasenas(CORREOS, plazo);
+
+    expect(crearClienteSecreto).toHaveBeenCalledExactlyOnceWith(plazo);
+  });
 });
