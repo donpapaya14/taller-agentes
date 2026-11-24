@@ -28,6 +28,20 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /*
+   * En móvil la navegación es una barra fija abajo. Para el navegador, lo que queda bajo ella ya se
+   * ve, así que al dar el foco con el teclado no desplaza nada y el elemento enfocado queda tapado
+   * (WCAG 2.4.11). Este margen de desplazamiento reserva el alto que el pie de la pantalla ya deja
+   * a la barra (--e8, como el pb-e8 del armazón del taller). Desde lg la barra desaparece.
+   */
+  html {
+    scroll-padding-bottom: var(--e8);
+
+    @variant lg {
+      scroll-padding-bottom: 0;
+    }
+  }
+
   :focus-visible {
     outline: var(--foco) solid var(--lampara);
     outline-offset: var(--foco-separacion);

@@ -73,14 +73,18 @@ describe('GET /api/cron/restablecer', () => {
     );
   });
 
-  it('[C-13] si hubo otro restablecimiento hace poco responde 200 EN_ESPERA y no toca nada más', async () => {
+  it('[C-13] si hubo otro restablecimiento hace poco responde 200 EN_ESPERA y repone igualmente las contraseñas', async () => {
     rpcRestablecer.mockResolvedValue('EN_ESPERA');
 
     const respuesta = await GET(peticion(`Bearer ${SECRETO}`));
 
     expect(respuesta.status).toBe(200);
     expect(await respuesta.json()).toEqual({ estado: 'EN_ESPERA' });
-    expect(reponerContrasenas).not.toHaveBeenCalled();
+    expect(reponerContrasenas).toHaveBeenCalledTimes(1);
+    expect(reponerContrasenas).toHaveBeenCalledWith(
+      Object.values(USUARIOS_DEMO),
+      expect.any(AbortSignal),
+    );
   });
 
   it('[C-13][D-14] si falla responde 500 con un motivo que se entiende', async () => {

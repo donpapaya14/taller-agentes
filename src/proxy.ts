@@ -27,13 +27,21 @@ function responderSinSupabase(peticion: NextRequest) {
   });
 }
 
+// Solo se orienta a quien navega (GET y HEAD). Un POST es una acción de servidor, con la cabecera
+// next-action si hay JavaScript y como formulario normal si no: redirigirla a /login la reenviaría
+// como POST a una página que no tiene esa acción, y quien tenía la sesión caducada acabaría en la
+// pantalla de error. Cada acción empieza por leerSesion() y manda ella a /login.
+const orienta = (peticion: NextRequest) => ['GET', 'HEAD'].includes(peticion.method);
+
 // Refresca la sesión y orienta al visitante. No autoriza nada: eso lo hace RLS en la base de datos.
 export async function proxy(peticion: NextRequest) {
   const renovada = await renovarSesion(peticion);
   if (renovada === null) return responderSinSupabase(peticion);
 
   const { haySesion, cookies, cabeceras } = renovada;
-  const decision = decidirAcceso(peticion.nextUrl.pathname, haySesion);
+  const decision = orienta(peticion)
+    ? decidirAcceso(peticion.nextUrl.pathname, haySesion)
+    : { tipo: 'pasa' as const };
   const respuesta =
     decision.tipo === 'pasa'
       ? NextResponse.next({ request: peticion })

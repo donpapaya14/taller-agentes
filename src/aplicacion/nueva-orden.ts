@@ -87,13 +87,21 @@ const normalizado = (normalizar: (texto: string) => string | null, mensaje: stri
     .transform(normalizar)
     .pipe(z.string({ error: mensaje }));
 
+// El navegador manda los saltos de línea de un textarea como \r\n, pero su maxlength cuenta cada uno
+// como un carácter: se igualan a \n antes de medir, para no rechazar lo que el formulario dejó
+// escribir, y así se guardan.
+const descripcion = z
+  .string({ error: MENSAJES.descripcion })
+  .transform((texto) => texto.replace(/\r\n?/g, '\n'))
+  .pipe(textoEntre(5, 500, MENSAJES.descripcion));
+
 const conVehiculoExistente = z.object({
-  descripcion: textoEntre(5, 500, MENSAJES.descripcion),
+  descripcion,
   vehiculoId: z.guid({ error: MENSAJES.vehiculoId }),
 });
 
 const conVehiculoNuevo = z.object({
-  descripcion: textoEntre(5, 500, MENSAJES.descripcion),
+  descripcion,
   matricula: normalizado(normalizarMatricula, MENSAJES.matricula),
   marca: textoEntre(1, TOPES.marca.largo, MENSAJES.marca, TOPES.marca.mensaje),
   modelo: textoEntre(1, TOPES.modelo.largo, MENSAJES.modelo, TOPES.modelo.mensaje),

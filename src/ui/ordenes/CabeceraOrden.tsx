@@ -45,7 +45,7 @@ export function CabeceraOrden(props: PropsCabecera) {
         </span>
         {numeroFactura !== null && <span className="text-acero">Factura {numeroFactura}</span>}
       </p>
-      <dl className="grid gap-e4 sm:grid-cols-2">
+      <dl className="grid gap-e4">
         <Dato termino="Vehículo" valor={vehiculo === '' ? 'Sin marca ni modelo' : vehiculo} />
         <Dato termino="Cliente" valor={cliente} />
         <Dato termino="Teléfono" valor={clienteTelefono === '' ? 'Sin teléfono' : clienteTelefono} />

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import { Boton, clasesDeBoton } from '../Boton';
+import { clasesDeBoton } from '../Boton';
+import { BotonDeEnvio } from '../BotonDeEnvio';
 import { IconoAvanzar, IconoLlave } from '../iconos';
 import { Matricula } from '../Matricula';
 
@@ -42,10 +43,10 @@ function AccionDeLaOrden({ orden, puedeEntregar, accionAvanzar }: Omit<PropsTarj
       <form action={accionAvanzar}>
         <input type="hidden" name="id" value={orden.id} />
         <input type="hidden" name="de" value={orden.estado} />
-        <Boton type="submit" variante="secundario" className="w-full">
+        <BotonDeEnvio variante="secundario" className="w-full">
           {avance}
           <IconoAvanzar className="size-e5 shrink-0 text-lampara group-hover:text-foso" />
-        </Boton>
+        </BotonDeEnvio>
       </form>
     );
   }

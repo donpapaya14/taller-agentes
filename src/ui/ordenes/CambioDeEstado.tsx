@@ -1,5 +1,5 @@
 import { anteriorEstado, ETIQUETA_ESTADO, siguienteEstado, type Estado } from '../../nucleo/orden';
-import { Boton } from '../Boton';
+import { BotonDeEnvio } from '../BotonDeEnvio';
 import { IconoAvanzar } from '../iconos';
 
 type AccionDeFormulario = (datos: FormData) => void | Promise<void>;
@@ -20,10 +20,10 @@ function Paso({ ordenId, de, a, texto, variante, accion }: PropsPaso) {
       <input type="hidden" name="id" value={ordenId} />
       <input type="hidden" name="de" value={de} />
       <input type="hidden" name="a" value={a} />
-      <Boton type="submit" variante={variante}>
+      <BotonDeEnvio variante={variante}>
         {texto}
         {variante === 'principal' && <IconoAvanzar className="size-e5 shrink-0" />}
-      </Boton>
+      </BotonDeEnvio>
     </form>
   );
 }

@@ -42,6 +42,25 @@ describe('CambioDeEstado: qué botones ofrece', () => {
   });
 });
 
+describe('CambioDeEstado: un solo envío', () => {
+  // Un segundo toque encontraría la orden ya movida y acabaría en un aviso de error.
+  it.each(['Pasar a listo', 'Volver a recibido'])(
+    '[D-13] mientras se mueve la orden, «%s» queda desactivado para no enviar dos veces',
+    async (texto) => {
+      dibujar(
+        'en_reparacion',
+        vi.fn<(datos: FormData) => void>(() => new Promise<void>(() => undefined)),
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: texto }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: texto }).hasAttribute('disabled')).toBe(true),
+      );
+    },
+  );
+});
+
 describe('CambioDeEstado: lo que envía', () => {
   it.each([
     ['avanzar', 'Pasar a listo', 'listo'],

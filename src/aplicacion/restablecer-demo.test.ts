@@ -21,29 +21,56 @@ function puertoQueResponde(respuesta: unknown) {
   return { puerto: { rpcRestablecer, reponerContrasenas }, reponerContrasenas };
 }
 
+// Quien pide con el secreto del cron es de confianza; quien pulsa el enlace del login no lo es.
+const DEL_CRON = { reponerEnEspera: true };
+const DE_UN_VISITANTE = { reponerEnEspera: false };
+
 describe('restablecerDemo', () => {
-  it('[C-13] solo repone contraseñas si se restableció', async () => {
+  it('[C-13] con la base en espera repone las contraseñas si lo pide el cron', async () => {
     const { puerto, reponerContrasenas } = puertoQueResponde('EN_ESPERA');
 
-    const resultado = await restablecerDemo(puerto);
+    const resultado = await restablecerDemo(puerto, DEL_CRON);
+
+    expect(resultado).toEqual({ estado: 'EN_ESPERA' });
+    expect(reponerContrasenas).toHaveBeenCalledTimes(1);
+  });
+
+  it('[C-13] con la base en espera no repone las contraseñas si lo pide un visitante', async () => {
+    const { puerto, reponerContrasenas } = puertoQueResponde('EN_ESPERA');
+
+    const resultado = await restablecerDemo(puerto, DE_UN_VISITANTE);
 
     expect(resultado).toEqual({ estado: 'EN_ESPERA' });
     expect(reponerContrasenas).not.toHaveBeenCalled();
   });
 
-  it('[C-13] restablecido repone contraseñas', async () => {
+  it.each([
+    ['el cron', DEL_CRON],
+    ['un visitante', DE_UN_VISITANTE],
+  ])('[C-13] restablecido repone contraseñas también si lo pide %s', async (_quien, opciones) => {
     const { puerto, reponerContrasenas } = puertoQueResponde('RESTABLECIDO');
 
-    const resultado = await restablecerDemo(puerto);
+    const resultado = await restablecerDemo(puerto, opciones);
 
     expect(resultado).toEqual({ estado: 'RESTABLECIDO' });
     expect(reponerContrasenas).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('restablecerDemo: cuando algo falla', () => {
+  it('[C-13][D-14] con la base en espera, si el cron no puede reponer las contraseñas devuelve ERROR con mensaje', async () => {
+    const { puerto, reponerContrasenas } = puertoQueResponde('EN_ESPERA');
+    reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
+
+    const resultado = await restablecerDemo(puerto, DEL_CRON);
+
+    expect(resultado).toEqual({ estado: 'ERROR', motivo: MOTIVO });
   });
 
   it('[C-13][D-14] si la base de datos falla devuelve ERROR con mensaje', async () => {
     const { puerto, reponerContrasenas } = puertoQueResponde(new Error('connection refused'));
 
-    const resultado = await restablecerDemo(puerto);
+    const resultado = await restablecerDemo(puerto, DEL_CRON);
 
     expect(resultado).toEqual({ estado: 'ERROR', motivo: MOTIVO });
     expect(reponerContrasenas).not.toHaveBeenCalled();
@@ -53,7 +80,7 @@ describe('restablecerDemo', () => {
     const { puerto, reponerContrasenas } = puertoQueResponde('RESTABLECIDO');
     reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
 
-    const resultado = await restablecerDemo(puerto);
+    const resultado = await restablecerDemo(puerto, DE_UN_VISITANTE);
 
     expect(resultado).toEqual({ estado: 'ERROR', motivo: MOTIVO });
   });
@@ -73,7 +100,7 @@ describe('restablecerDemo', () => {
     async (_caso, basura) => {
       const { puerto, reponerContrasenas } = puertoQueResponde(basura);
 
-      const resultado = await restablecerDemo(puerto);
+      const resultado = await restablecerDemo(puerto, DEL_CRON);
 
       expect(resultado).toEqual({ estado: 'ERROR', motivo: MOTIVO });
       expect(reponerContrasenas).not.toHaveBeenCalled();

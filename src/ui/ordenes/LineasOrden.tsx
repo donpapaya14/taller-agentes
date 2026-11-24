@@ -1,5 +1,5 @@
 import { calcularTotales, formatearEuros } from '../../nucleo/importe';
-import { Boton } from '../Boton';
+import { BotonDeEnvio } from '../BotonDeEnvio';
 import { EstadoVacio } from '../EstadoVacio';
 
 export type LineaVista = {
@@ -69,15 +69,11 @@ function ControlesDeLinea({
           aria-label={`Cantidad de ${linea.nombre}`}
           className="min-h-toque w-full min-w-0 rounded-pieza border border-raya bg-chapa-alta px-e4 text-base text-hueso"
         />
-        <Boton type="submit" variante="secundario">
-          Guardar
-        </Boton>
+        <BotonDeEnvio variante="secundario">Guardar</BotonDeEnvio>
       </form>
       <form action={accionQuitar}>
         <input type="hidden" name="lineaId" value={linea.id} />
-        <Boton type="submit" variante="peligro">
-          Quitar
-        </Boton>
+        <BotonDeEnvio variante="peligro">Quitar</BotonDeEnvio>
       </form>
     </div>
   );

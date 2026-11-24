@@ -1,10 +1,14 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { entrar, entrarComoDemo } from './acciones';
+import { entrar, entrarComoDemo, restablecer } from './acciones';
 import Login from './page';
 
-vi.mock('./acciones', () => ({ entrar: vi.fn(), entrarComoDemo: vi.fn() }));
+vi.mock('./acciones', () => ({
+  entrar: vi.fn(),
+  entrarComoDemo: vi.fn(),
+  restablecer: vi.fn(),
+}));
 
 afterEach(() => {
   cleanup();
@@ -61,6 +65,57 @@ describe('login: lo que pide', () => {
     );
 
     expect(autocompletar).toEqual(['username', 'current-password']);
+  });
+});
+
+// Va antes que los tests de entrar: uno de ellos deja una acción que no termina, y React junta las
+// acciones asíncronas que siguen en marcha, así que el resultado de una acción posterior no se pintaría.
+describe('login: restablecer la demo', () => {
+  const ENLACE = '¿No puedes entrar? Restablecer la demo';
+
+  it('[C-13] bajo los accesos de demostración hay un enlace discreto para restablecerla', async () => {
+    await dibujar();
+
+    const accesos = screen.getByRole('button', { name: 'Entrar como mecánico' });
+    const enlace = screen.getByRole('button', { name: ENLACE });
+
+    expect(accesos.compareDocumentPosition(enlace) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it.each([
+    ['restablecida', { tipo: 'ok', texto: 'Demo restablecida. Ya puedes entrar' }, 'status'],
+    [
+      'en espera',
+      { tipo: 'ok', texto: 'La demo se restableció hace menos de 10 minutos. Prueba a entrar' },
+      'status',
+    ],
+    ['con error', { tipo: 'error', texto: 'No se pudo restablecer la demo' }, 'alert'],
+  ] as const)(
+    '[C-13][D-14] con la demo %s enseña lo que ha pasado',
+    async (_caso, resultado, rol) => {
+      vi.mocked(restablecer).mockResolvedValue(resultado);
+      await dibujar();
+
+      fireEvent.click(screen.getByRole('button', { name: ENLACE }));
+
+      expect((await screen.findByRole(rol)).textContent).toBe(resultado.texto);
+      expect(restablecer).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('[C-13][D-13] mientras restablece, el enlace queda desactivado y lo dice', async () => {
+    let acabar: () => void = () => undefined;
+    vi.mocked(restablecer).mockReturnValue(
+      new Promise((resolver) => (acabar = () => resolver({ tipo: 'ok', texto: 'Hecho' }))),
+    );
+    await dibujar();
+
+    fireEvent.click(screen.getByRole('button', { name: ENLACE }));
+
+    const restableciendo = await screen.findByRole('button', { name: 'Restableciendo la demo…' });
+    expect(restableciendo.hasAttribute('disabled')).toBe(true);
+    await act(async () => acabar());
+    expect(await screen.findByRole('status')).toBeTruthy();
   });
 });
 
