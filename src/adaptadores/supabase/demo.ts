@@ -14,9 +14,10 @@ const paginaDeUsuarios = z.object({
 // Un error de Supabase como excepción de verdad, con su mensaje y el original como causa.
 const comoExcepcion = (error: { message: string }) => new Error(error.message, { cause: error });
 
-// Solo la clave secreta puede ejecutar restablecer_demo: ni anon ni authenticated.
-export async function rpcRestablecer(): Promise<string> {
-  const { data, error } = await crearClienteSecreto().rpc('restablecer_demo');
+// Solo la clave secreta puede ejecutar restablecer_demo: ni anon ni authenticated. El `plazo` es el
+// de la operación entera (restablecer y reponer contraseñas): pasado él, el cliente no sigue.
+export async function rpcRestablecer(plazo?: AbortSignal): Promise<string> {
+  const { data, error } = await crearClienteSecreto(plazo).rpc('restablecer_demo');
   if (error) throw comoExcepcion(error);
   return respuestaDeRestablecer.parse(data);
 }
@@ -55,8 +56,11 @@ async function buscarIds(cliente: SupabaseClient, correos: readonly string[]): P
 
 // Quien probó la demo pudo cambiar una contraseña: tras restablecerla vuelven a ser DEMO_PASSWORD.
 // Los correos los pone quien llama: este módulo no importa los casos de uso (regla de capas).
-export async function reponerContrasenas(correos: readonly string[]): Promise<void> {
-  const cliente = crearClienteSecreto();
+export async function reponerContrasenas(
+  correos: readonly string[],
+  plazo?: AbortSignal,
+): Promise<void> {
+  const cliente = crearClienteSecreto(plazo);
   const { demoPassword } = leerEntornoSecreto();
   for (const id of await buscarIds(cliente, correos)) {
     const { error } = await cliente.auth.admin.updateUserById(id, { password: demoPassword });

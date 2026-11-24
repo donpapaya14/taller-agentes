@@ -1,0 +1,141 @@
+{
+  "feature": "f10-pantallas-ordenes",
+  "ronda": 1,
+  "fecha": "2026-11-24",
+  "commitRevisado": "c2c24390ee84459131d4023d9943fde4dd31daa1",
+  "veredicto": "PASA",
+  "comandos": [
+    {
+      "comando": "git log --graph --oneline; git diff --shortstat main...paso-13; git diff --name-status main...paso-13; git merge-base main paso-13; búsqueda de archivos protegidos en el diff",
+      "resultado": "OK",
+      "resumen": "El ancestro común es 7255fd2. commitRevisado es c2c2439, el merge de main sobre el commit de Develop (8652ed9, feat de la ronda 1). El rango trae 65 archivos, 5005 inserciones y 219 borrados: tablero, nueva orden y ficha con sus acciones, la ruta del PDF, el aviso por cookie, nueve componentes (Aviso y ocho de src/ui/ordenes), cambios en los adaptadores y casos de uso de órdenes, líneas, entrega y secretos, el cron del restablecimiento con su plazo y los tests; borra src/app/muestra y src/ui/tablero/muestra.ts. Ningún archivo protegido tocado: package.json, el lockfile, DIRECTRICES.md, docs, .claude, eslint, dependency-cruiser, scripts, supabase ni proceso/features.json. main ya va por 20a6c76: f11 y la ronda 2 de f08 entraron después de crear la rama."
+    },
+    {
+      "comando": "npm run check:full (antes de mi commit)",
+      "resultado": "OK",
+      "resumen": "Sale con 0 en 16 s. eslint y tsc limpios; vitest 95 archivos y 1526 tests en verde; cobertura 99,57 % de sentencias, 99,41 % de ramas, 100 % de funciones y 99,51 % de líneas; dependency-cruiser sin violaciones (160 módulos, 515 dependencias); puertas: umbrales sin hallazgos, 0 clones en 176 archivos y trinquete sin hallazgos. Solo avisos: silencios que citan rondas antiguas (aceptados por UMBRAL) y mocks añadidos en tests. El árbol de git queda sin cambios."
+    },
+    {
+      "comando": "npm run spec:check",
+      "resultado": "OK",
+      "resumen": "Sale con 0: 15 directrices, 14 VERIFICADO, 0 ROJO, 0 SIN TEST y 1 MANUAL (D-13)."
+    },
+    {
+      "comando": "npx next build con las seis variables de entorno apuntando a un Supabase falso local (sin credenciales reales)",
+      "resultado": "OK",
+      "resumen": "Sale con 0 en 6 s. Next 16.4.6 compila y pasa los tipos; rutas /, /_not-found, /api/cron/restablecer, /login, /ordenes/[id], /ordenes/[id]/documento, /ordenes/nueva, /proceso y /tablero, más el proxy. /muestra ya no existe."
+    },
+    {
+      "comando": "Supabase falso local (Node, emula Auth y PostgREST con las políticas por taller, los permisos por columna, el disparador de transiciones y cerrar_orden de las migraciones) y npx next start -p 3400 -H 127.0.0.1 con las seis variables apuntando a él; URL_BASE=http://127.0.0.1:3400 npx playwright test tests/e2e/pantallas-publicas.spec.ts tests/e2e/tablero-visual.spec.ts --reporter=line. Sustituye a npm run gate:e2e por decisión del orquestador: su spec llega en el paso 15",
+      "resultado": "OK",
+      "resumen": "16 pruebas en verde en 3,1 s, en los proyectos movil (390 px) y escritorio (1440 px): las rutas públicas no se salen de la pantalla de 320 a 1920 px, la matrícula de 8 y de 40 caracteres, el grano del fondo a 390 px y ninguna tarjeta tarda más de 600 ms. Ninguno de los dos specs recorre las pantallas nuevas: se midieron aparte, en los comandos siguientes. Los scripts de Testing viven fuera del repo."
+    },
+    {
+      "comando": "Playwright (Chromium de Playwright 1.65.1, es-ES) contra la build servida: «Entrar como jefe» y «Entrar como mecánico» por el formulario real y 28 estados medidos con axe-core: tablero, nueva orden, nueva orden con vehículo nuevo y la ficha en recibido, en reparación, listo y entregado, como jefe y como mecánico, a 390 y a 1440 px",
+      "resultado": "OK",
+      "resumen": "Sin desborde horizontal ni interno en ningún estado, ninguna letra por debajo de 14 px, sin emojis y axe sin una sola falta grave ni crítica; el mismo axe encuentra las tres faltas inyectadas a propósito en una página de control (contraste, alt de imagen y región), así que el instrumento ve. Los objetivos táctiles por debajo de 48 px son solo el enlace de marca FOSO (26,6 y 35,7 px) y el enlace de la matrícula de cada tarjeta (44 px, observación 3f); los botones de acción miden 56 px. La consola solo da avisos de recurso con 404 (24 en total); en el tablero se comprobó que es la precarga de /recambios (observación 3k)."
+    },
+    {
+      "comando": "Playwright a 390 px: las cuatro columnas del tablero, una a una con el selector de columna, como jefe y como mecánico",
+      "resultado": "OK",
+      "resumen": "Sin desborde y con axe limpio en las ocho vistas. «Pasar a en reparación», «Pasar a listo» y «Entregar» miden 56 px; el mecánico no ve «Entregar»; la columna Entregado no ofrece acciones."
+    },
+    {
+      "comando": "Playwright con los formularios reales, como mecánico y como jefe a 390 px: crear una orden con vehículo nuevo, aviso por WhatsApp, cambio de estado, recambios, mano de obra, totales, entrega y PDF de presupuesto y de factura (texto de los PDF leído con pdftotext)",
+      "resultado": "OK",
+      "resumen": "Pasan todos los pasos del recorrido. La orden nueva sale con la matrícula normalizada (5821KLM) y el teléfono con prefijo 34, y lleva a la ficha; el enlace de WhatsApp abre wa.me con la matrícula en otra pestaña y con noopener; el mecánico avanza y retrocede estados, añade, cambia y quita recambios y guarda minutos viendo solo «× 2», sin ningún importe ni «€», y recibe 403 con el texto del plan en el PDF. El jefe ve base 129,30, IVA 27,15 y total 156,45; el presupuesto sale 200, application/pdf, inline, presupuesto-3388NBC.pdf y Cache-Control private, no-store; entregar da F-2026-0002, descuenta el stock (10 a 8 y 8 a 7), deja la orden de solo lectura y cambia el enlace a «Descargar factura» (factura-F-2026-0002.pdf, con el número y el total en su texto)."
+    },
+    {
+      "comando": "Playwright: POST de las acciones reales con los id de acción de los formularios, a mano, como mecánico, como jefe del otro taller y sin sesión",
+      "resultado": "OK",
+      "resumen": "El mecánico que manda «entregar» a mano no entrega: la acción corta antes de llamar a la base (ninguna llamada a cerrar_orden) y lee «Solo el jefe de taller puede entregar una orden». Saltar de estado con un «de» falso, o pasar a entregado por el formulario de estado, no mueve nada; siete cantidades basura, cinco minutos basura y un id de línea que no es uuid no cambian nada. El jefe del otro taller ve solo su tablero y solo sus vehículos, y siete acciones a mano sobre datos del taller A no cambian órdenes, líneas ni stock; el PDF de esa orden da 404 con «No encontramos esa orden». Sin sesión, el PDF y la entrega a mano van a /login y no escriben nada."
+    },
+    {
+      "comando": "Playwright con la sesión del jefe del taller B: GET de la ficha y del PDF de una orden del taller A, de un id que no es uuid y de uno que no existe; en la ficha ajena se buscan 31 cadenas del taller A (matrículas, marcas, modelos, clientes, teléfonos, referencias, descripciones y el nombre del taller)",
+      "resultado": "OK",
+      "resumen": "Cero coincidencias en el HTML y en la pantalla de la ficha ajena. Las tres fichas (ajena, sin uuid, inexistente) enseñan «Esa página no existe» con noindex (sin desborde ni faltas de axe, medido en la inexistente), pero responden HTTP 200 (observación 3e); el PDF responde 404 con su texto. Control: la ficha de una orden propia de B se abre."
+    },
+    {
+      "comando": "Playwright en nueva orden con entradas límite: vacío, matrícula «ABC», teléfono «123», descripción de 4 letras, el tope (40, 40, 80 y 500) y el tope más uno, matrícula repetida, vehículo del taller elegido, HTML en los textos y texto Unicode",
+      "resultado": "OK",
+      "resumen": "Los errores se explican junto a cada campo y lo escrito se conserva; con 41, 41, 81 y 501 salen cuatro errores con su tope; justo en el tope la orden se crea y la ficha no se desborda a 390 px. La matrícula repetida se dice junto al campo y no deja un cliente suelto (clientes 6 a 6); elegir un vehículo del taller no crea otro; el HTML de los textos se escribe tal cual, sin elementos ni scripts. Los PDF de la orden de tope, con HTML y con tildes, eñe y escritura no latina salen con 200 y su texto leído (observación 3l). Tres bordes van a observaciones (3c, 3d y 3j)."
+    },
+    {
+      "comando": "Supabase falso con errores inyectados: lectura del tablero, PATCH de la orden, cerrar_orden con 40P01, con 23505 y con stock insuficiente, líneas y recambios cambiados por otra persona",
+      "resultado": "OK",
+      "resumen": "Con la base caída el tablero sale con la pantalla de error en español sin texto técnico, sin desborde ni faltas de axe, y «Reintentar» vuelve a pedirlo y lo carga. Mover con la base en 500 dice «No se pudo mover la orden. Inténtalo de nuevo.» encima del tablero. El interbloqueo, el número de factura repetido, el stock («No hay stock suficiente de FRE-001. Revisa el almacén antes de entregar»), una línea que ya no está y un recambio ya añadido se explican en español y no cambian nada en la base."
+    },
+    {
+      "comando": "Playwright a 390 y a 1440 px: ficha con 999 unidades de un recambio de nombre larguísimo y 6000 minutos de mano de obra, tablero con la tarjeta de textos en el tope, aviso de error encima del tablero y aviso de éxito al entregar",
+      "resultado": "OK",
+      "resumen": "Base imponible 127.839,05 € y total 154.685,25 € sin romper la ficha. En las 13 pantallas medidas: sin desborde, sin faltas de axe, ninguna letra por debajo de 14 px y botones de acción de 56 px."
+    },
+    {
+      "comando": "Playwright: doble toque en «Entregar» y en «Pasar a en reparación», triple toque en «Crear orden»",
+      "resultado": "OK",
+      "resumen": "No se duplica ni se pierde nada: cerrar_orden se llama dos veces (200 y 400), la factura se emite una vez (F-2026-0002, siguiente número 3), el estado queda bien y «Crear orden» crea una sola orden (el botón se desactiva al enviar). Pero la pantalla acaba con un aviso de error sobre una acción que sí salió bien (observación 3a)."
+    },
+    {
+      "comando": "Playwright: se borran las cookies con la pantalla abierta y se pulsan «Pasar a en reparación», «Entregar» y «Crear orden»",
+      "resultado": "OK",
+      "resumen": "No se escribe nada (5 órdenes antes y después). En los tres casos sale la pantalla de error de (taller) con su texto en español y «Reintentar», no el login (observación 3h)."
+    },
+    {
+      "comando": "Playwright: HTML de la ficha de una orden lista y del tablero del mecánico y del jefe, buscando importes (35,90; 12,50; 129,30; 156,45; Base imponible; precio_unitario; precioHora)",
+      "resultado": "OK",
+      "resumen": "El HTML del mecánico (la ficha, 41163 bytes, y el tablero) no lleva ninguna cadena de importe ni de precio; el del jefe, de control, sí. Se leyó el HTML, que trae incrustada la carga RSC de la primera pantalla; una petición RSC suelta devolvió 500 por no ser la que manda el cliente de Next, así que no se cuenta."
+    },
+    {
+      "comando": "Playwright con sesión de jefe: GET de /muestra, /ordenes, /ordenes/, /ordenes/nueva/, /recambios, /tablero?x=1 y una ruta cualquiera",
+      "resultado": "OK",
+      "resumen": "/muestra, /ordenes, /recambios y la ruta cualquiera dan la pantalla 404 de la app (la rama no tiene /recambios; lo trae f11 en main); /ordenes/ y /ordenes/nueva/ redirigen con 308 a su dirección sin barra; /tablero con parámetros de más se abre."
+    },
+    {
+      "comando": "GET /api/cron/restablecer sin cabecera Authorization, con un secreto incorrecto, sin la palabra Bearer, con bearer en minúscula y con dos espacios; y con el secreto correcto contra un servidor de datos que no tiene la función",
+      "resultado": "OK",
+      "resumen": "401 con «No autorizado» en los cinco casos sin secreto correcto. Con el secreto correcto y la función sin existir, 500 con «No se pudo restablecer la demo»: dice el motivo sin nombrar variables ni repetir textos de la base."
+    },
+    {
+      "comando": "Búsqueda de los valores falsos de las seis variables, de la dirección del servidor de datos y de los nombres SUPABASE_SECRET_KEY, CRON_SECRET y DEMO_PASSWORD en .next/static, en los HTML prerenderizados de .next/server/app y en las respuestas de /login y de /; y de importaciones de los adaptadores con secretos desde archivos con use client",
+      "resultado": "OK",
+      "resumen": "Cero coincidencias en los tres sitios. Ningún archivo de cliente importa entorno-secreto, cliente-secreto ni los adaptadores de Supabase. Cinco módulos que no son tests tocan secretos: tres con server-only (cliente-secreto, demo, entorno-secreto) y dos de servidor (la ruta del cron y la acción de login) que solo los importan de ellos."
+    },
+    {
+      "comando": "node con PGlite 0.6.0, las migraciones reales y el arnés de tests/bd: las operaciones nuevas como mecánico y jefe del taller A y como jefe del taller B",
+      "resultado": "OK",
+      "resumen": "Cantidad y quitar línea de una orden lista: 1 fila; de otro taller: 0. Cantidad 0 y minutos negativos: 23514. Cambiar el precio de una línea: 42501, y el precio no cambia al cambiar la cantidad. De recibido a listo: TRANSICION_INVALIDA; de listo a entregado con update directo y poner el número de factura a mano: 42501. Crear cliente, vehículo y orden como mecánico: orden en recibido; matrícula repetida: 23505. cerrar_orden: SOLO_JEFE para el mecánico, F-2026-0001 para el jefe, ESTADO_INVALIDO a la segunda vez y en recibido, STOCK_INSUFICIENTE:REF-2 y ORDEN_NO_ENCONTRADA desde otro taller. Una orden entregada ya no deja tocar sus líneas ni su mano de obra (0 filas)."
+    },
+    {
+      "comando": "node: búsqueda con expresiones regulares en las 7423 líneas de los 63 archivos añadidos o modificados del rango (script de Testing fuera del repo)",
+      "resultado": "OK",
+      "resumen": "Cero coincidencias de silenciadores de eslint, de TypeScript, de cobertura y de mutación, del tipo any, de skip, only o todo en los tests, de HTML inyectado sin escapar, de colores literales, de valores sueltos en clases, de estilos en línea, de catch vacío, de emojis, de texto de relleno, de console, de NEXT_PUBLIC_ y de aritmética decimal con dinero fuera de los tests."
+    },
+    {
+      "comando": "node: las clases de className de los 13 archivos tsx que no son test del rango contra los selectores del CSS compilado de .next/static",
+      "resultado": "OK",
+      "resumen": "Las 87 clases con aspecto de utilidad tienen su regla en el CSS compilado o en globals.css, y ninguna lleva un valor suelto entre corchetes (comando anterior). La única sin regla es sm:grid-cols-2 en CabeceraOrden.tsx:48: el tema solo define los puntos de ruptura lg y xl (tokens.css:120-123), así que no hace nada (observación 3g)."
+    },
+    {
+      "comando": "77 mutaciones sobre una copia desechable de HEAD fuera del repo, cada una con la suite entera de vitest (npx vitest run --bail 1; script de Testing)",
+      "resultado": "OK",
+      "resumen": "La base sin tocar pasa los 1526 tests. Mueren 76 de 77: permisos de cada acción de la ficha, del tablero y de nueva orden y de la ruta del PDF, sesión que no lleva a /login, avisos y revalidaciones, transiciones de estado, entrega y su traducción de errores, repositorio de órdenes (estado de partida, filtros, unicidad, errores de cerrar_orden), atributos de la cookie del aviso, importes y permisos de la ficha, enlaces a otra pestaña y controles de línea; cada una la mata el test que nombra la regla. Sobrevive la que quita de page.tsx la comprobación de numeroFactura al elegir «Descargar factura» (observación 2). La copia se deja en el scratchpad de la sesión, fuera del repo."
+    },
+    {
+      "comando": "Fusión simulada: git merge-tree --write-tree main paso-13 (árbol d279507), exportado con git archive a una copia desechable fuera del repo con node_modules clonado; npm run lint, tipos, cobertura, arquitectura, duplicado, muerto y spec:check en ella",
+      "resultado": "OK",
+      "resumen": "Sin conflictos de texto. En la copia: eslint y tsc limpios; vitest 104 archivos y 1687 tests en verde; cobertura 99,6 % de sentencias, 99,49 % de ramas, 100 % de funciones y 99,55 % de líneas; dependency-cruiser sin violaciones (175 módulos, 570 dependencias); spec:check con 14 VERIFICADO y 1 MANUAL; knip 3 hallazgos (el tope de calidad-base.json es 10); jscpd 1 clon de 8 líneas, el 0,036 %, bajo la tolerancia de 0,1 del trinquete. No se corrieron la guarda de umbrales, el detector ni el trinquete en la copia porque necesitan el historial de git."
+    },
+    {
+      "comando": "Parar con TaskStop el servidor de la rama y el Supabase falso; lsof -nP -iTCP:3400 -iTCP:54399 -sTCP:LISTEN; ps de next, del falso y de chromium; git status --short",
+      "resultado": "OK",
+      "resumen": "Los dos servidores están parados, los puertos 3400 y 54399 libres, ningún proceso suelto y el árbol de git solo tiene este archivo sin seguir."
+    },
+    {
+      "comando": "node: este archivo contra esquemaRonda, el esquema real de la rama, y contra los patrones que lee el detector de manipulación; npx vitest run tests/proceso src/adaptadores/proceso; npm run check:full con este archivo ya escrito y aún sin commit",
+      "resultado": "OK",
+      "resumen": "esquemaRonda lo da por válido (26 comandos, 0 en rojo, 0 fallos, nombre y carpeta coherentes con la feature y la ronda) y no trae ninguno de los patrones del detector. Los tests del esquema y del lector de rondas pasan (9 archivos, 91 tests) y check:full sale con 0: los mismos 95 archivos y 1526 tests, las mismas coberturas, 0 violaciones de arquitectura, 0 clones y trinquete sin hallazgos; los únicos avisos de silenciadores son los de las rondas antiguas de f01, f03, f04 y f06, aceptados por UMBRAL."
+    }
+  ],
+  "fallos": [],
+  "observaciones": "1) Alcance. Rango main...paso-13 con tres puntos (ancestro común 7255fd2); commitRevisado es c2c2439, el merge de main sobre el commit de Develop (8652ed9). Es la ronda 1 de f10-pantallas-ordenes: tablero con avance de estado, nueva orden, ficha de la orden (estado, recambios, mano de obra, totales, aviso por WhatsApp y entrega) y PDF. npm run gate:e2e no se corrió por decisión del orquestador (su spec llega en el paso 15): se sustituyó por un recorrido a mano con Playwright a 390 y 1440 px, como jefe y como mecánico, contra la build de la rama y un Supabase falso local, y se corrieron a mano los dos specs que ya existen. Nada se hizo contra el Supabase real. Al terminar se pararon el servidor de la rama y el falso: puertos 3400 y 54399 libres, ningún proceso suelto y el árbol de git limpio salvo este archivo.\n\n2) Qué se midió con cada directriz. D-1, D-3, D-6 y D-7: check:full y spec:check; el rango no toca src/nucleo ni supabase/, y la lógica de base de datos que usan las pantallas se probó aparte con PGlite sobre las migraciones reales. D-2: entradas basura a mano en cada formulario y acción (cantidades, minutos, ids que no son uuid, estados falsos, textos en el tope y la cookie del aviso con su esquema); cada archivo cambiado de src/aplicacion y de los adaptadores tiene sus tests [D-2]. D-4: búsquedas en el navegador y en .next. D-5: sin aritmética decimal con dinero fuera de tests y totales a mano. D-8, D-9 y D-12: expresiones regulares sobre el rango y clases contra el CSS compilado. D-10: los pares del aviso, los botones y los campos están en pares-contraste.ts (el rango no toca tokens ni ese archivo) y axe no da faltas de contraste en ningún estado. D-11 y D-14: los tests estructurales de tests/diseno/estados.test.ts recorren las tres páginas nuevas de (taller) y se forzaron fallos de la base en el navegador. D-13: el recorrido a mano. D-15: el esquema de rondas sobre este archivo. Mutaciones: 77 mutantes, 76 muertos. El superviviente (P06) quita de page.tsx la comprobación de numeroFactura al elegir «Descargar factura»; con datos reales no se da (cerrar_orden escribe estado y número a la vez y RLS no deja escribirlos por otra vía), pero ningún test pone una orden entregada sin número.\n\n3) Casos que rompen o que se ven mal y que ninguna directriz cubre; ninguno es un fallo, y la evidencia está en los comandos de arriba:\n a) Doble toque. «Entregar» y los botones de cambio de estado no se desactivan mientras envían (solo «Crear orden» lo hace). Con doble toque en «Entregar» salen dos llamadas a cerrar_orden (200 y 400): la factura se emite una vez, pero la pantalla acaba con «La orden tiene que estar en «Listo» para entregarla» sobre una orden que sí se entregó. Con doble toque en «Pasar a en reparación» salen dos PATCH y el aviso dice «Otra persona ya movió esta orden. Recarga el tablero» aunque el estado quedó bien. No se duplica ni se pierde nada; el mensaje confunde a quien lo lee.\n b) El aviso de una acción vive 10 s en una cookie (aviso.ts:13-16, documentado en el código) y una página no puede borrarla al leerla: un aviso de error del tablero se vuelve a ver en la ficha que se abra enseguida o al recargar, y se va solo a los 10 s.\n c) Los saltos de línea de la descripción cuentan doble en el servidor (el navegador manda cada uno como dos caracteres): una descripción de 499 caracteres con 19 saltos, que el navegador deja escribir porque maxlength es 500, se rechaza con «Describe la avería o el trabajo (entre 5 y 500 letras)». Con 500 caracteres sin saltos la orden se crea.\n d) Con «Vehículo nuevo» elegido y todos sus campos en blanco, el servidor pide «Elige un vehículo» y no un error por campo: el campo oculto vehiculoId viaja vacío y nueva-orden.ts:122-130 decide el esquema por lo escrito y no por lo elegido. Con JavaScript y los required del formulario no se llega a enviar; solo se ve sin la validación del navegador.\n e) La ficha de una orden que no existe, con un id que no es uuid o de otro taller enseña «Esa página no existe» con noindex y sin ningún dato del taller A, pero responde HTTP 200: la pantalla de carga de (taller) ya había empezado a enviarse (el HTML trae «Cargando el taller» y la marca de 404 de Next). El PDF de la misma orden sí da 404 con su texto.\n f) El enlace de la matrícula de cada tarjeta del tablero mide 44 px de alto; los botones de acción miden 56 px. No es un botón de acción (D-13 y el SPEC miden button y los enlaces con clase de botón) y f01-sistema-visual ya lo dejó dicho, pero a 390 px es el objetivo táctil más pequeño del tablero.\n g) La clase sm:grid-cols-2 de CabeceraOrden.tsx:48 no hace nada: el tema solo define los puntos de ruptura lg y xl (tokens.css:120-123) y el CSS compilado no la trae, así que los datos de la cabecera quedan siempre en una columna. A 1440 px se ven bien.\n h) Si la sesión desaparece con la pantalla abierta, el siguiente botón no lleva a /login: sale «Algo ha fallado al cargar esta pantalla. Vuelve a intentarlo. Si sigue pasando, sal y entra de nuevo.» con «Reintentar», y la consola dice «An unexpected response was received from the server». No se escribe nada. El mensaje se entiende; llevar a /login sería lo esperable.\n i) Los dos puntos que convierten una excepción en un aviso (contarResultado en (taller)/aviso.ts:61-74 y crear en (taller)/ordenes/nueva/acciones.ts:38-47) tiran la causa: no se registra ni llega a ningún sitio (eslint prohíbe console). La persona lee un mensaje en español, que es lo que pide D-14, pero en producción nadie sabrá por qué «No se pudo mover la orden».\n j) Los formularios usan required, min, max y maxlength nativos: sus avisos salen en el idioma del navegador y no en español (misma observación que en f09-pantallas-acceso).\n k) El menú enlaza a /recambios, que esta rama no tiene (lo trae f11, ya en main): cada pantalla da un 404 en la consola por la precarga y el enlace lleva a la pantalla 404. Desaparece al integrar.\n l) El PDF sustituye por «?» las letras que la fuente estándar no trae (la Ł de Łukasz, escritura no latina). Es del adaptador de f08, que no está en este rango; main lo cambió en la ronda 2 de f08 y no se ha vuelto a medir.\n m) «Reintentar» de (taller)/error.tsx ya usa retry y recupera el tablero (comando de errores forzados): cierra la observación 3b de la ronda 2 de f09-pantallas-acceso.\n\n4) Integración con main. main avanzó a 20a6c76 mientras se revisaba y paso-13 sigue sobre 7255fd2. La fusión no tiene conflictos de texto y, sobre su árbol exportado a una copia desechable, lint, tipos, 1687 tests, cobertura, arquitectura, knip y jscpd salen dentro de los topes (detalle en el comando de la fusión simulada). Aparece un clon de 8 líneas entre el ayudante datosDe de src/app/(taller)/recambios/acciones.test.ts, de main, y el de tests/apoyo/next-falso.ts: el 0,036 %, bajo la tolerancia de 0,1 del trinquete. No se corrieron la guarda de umbrales, el detector ni el trinquete sobre esa copia: el orquestador debe correr check:full en main tras integrar, como siempre.\n\n5) Sin comprobar. Safari, WebKit y Firefox ni un móvil real (teclado y barra fija en iOS): solo Chromium. Los anchos entre 390 y 1440 px y 320 px en las pantallas privadas: el barrido de 320 a 1920 px lo hará el spec del paso 15, y los dos specs que existen no recorren las pantallas nuevas. npm run dev. El Supabase real: RLS, permisos por columna y cerrar_orden se probaron con PGlite sobre las migraciones reales y con un servidor falso que las imita, no contra Postgres de producción; Auth y sus cookies reales tampoco. El éxito del cron (la función restablecer_demo): el falso no la tiene. La apertura de WhatsApp: solo se comprobó la dirección wa.me, con el teléfono y el texto. El aspecto de los PDF: se leyó su texto con pdftotext y no se miró la página. La carga con muchas órdenes y las entregas a la vez de dos personas distintas: solo doble toque y los errores inyectados. La mutación de Stryker no aplica: solo cubre src/nucleo y el rango no lo toca."
+}

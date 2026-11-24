@@ -121,6 +121,29 @@ describe('validarNuevaOrden con el vehículo nuevo a medias', () => {
   });
 });
 
+// Marca, modelo y nombre sin tope llegarían enteros a la base de datos y a las tarjetas del tablero.
+describe('validarNuevaOrden, topes de longitud', () => {
+  const conCampo = (campo: string, texto: string) =>
+    validarNuevaOrden({ ...VEHICULO_NUEVO, [campo]: texto });
+
+  it.each([
+    ['marca', 40, 'La marca tiene como máximo 40 caracteres'],
+    ['modelo', 40, 'El modelo tiene como máximo 40 caracteres'],
+    ['clienteNombre', 80, 'El nombre tiene como máximo 80 caracteres'],
+  ])('[C-11][D-2] %s admite %i caracteres y rechaza uno más', (campo, tope, mensaje) => {
+    expect(conCampo(campo, 'a'.repeat(tope))).toMatchObject({ ok: true });
+    expect(conCampo(campo, 'a'.repeat(tope + 1))).toEqual(fallo({ [campo]: mensaje }));
+  });
+
+  it('[C-11] el tope cuenta el texto sin los espacios de los lados', () => {
+    expect(conCampo('marca', ` ${'a'.repeat(40)} `)).toMatchObject({ ok: true });
+  });
+
+  it('[C-11] un campo vacío sigue pidiendo el dato, no hablando del tope', () => {
+    expect(conCampo('marca', '   ')).toEqual(fallo({ marca: MENSAJES.marca }));
+  });
+});
+
 describe('validarNuevaOrden, descripción', () => {
   const conDescripcion = (descripcion: unknown) =>
     validarNuevaOrden({ ...VEHICULO_EXISTENTE, descripcion });

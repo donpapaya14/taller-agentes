@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   bien,
+  claveRepetida,
   clienteServidorFalso,
   mal,
   preparar,
@@ -16,7 +17,7 @@ import {
   ORDEN_RESUMEN,
 } from '../../../tests/apoyo/filas-de-ejemplo';
 import { SELECCION_ORDEN_DETALLE, SELECCION_ORDEN_RESUMEN, SELECCION_VEHICULO } from './filas';
-import { crearOrden, leerOrden, listarOrdenes, listarVehiculos } from './ordenes';
+import { crearOrden, leerOrden, listarOrdenes, listarVehiculos, MatriculaRepetida } from './ordenes';
 
 vi.mock('./cliente-servidor', () =>
   import('../../../tests/apoyo/cliente-falso').then((modulo) => modulo.clienteServidorFalso),
@@ -226,6 +227,32 @@ describe('crearOrden con vehículo y cliente nuevos', () => {
       new Error(MENSAJES.matriculaRepetida),
     );
     expect(consultas).toHaveLength(1);
+  });
+
+  // La pantalla dice junto al campo de la matrícula lo que ya sabe este error, y para eso lo
+  // distingue de cualquier otro fallo.
+  it('[D-14] la matrícula repetida es un error con su propio tipo', async () => {
+    preparar(bien({ id: ID_VEHICULO }));
+
+    await expect(crearOrden(NUEVO, ID_TALLER)).rejects.toBeInstanceOf(MatriculaRepetida);
+  });
+
+  // Entre la comprobación y el insert otra persona puede crear el mismo vehículo: Postgres lo
+  // rechaza con la clave única (23505) y se dice lo mismo, sin dejar la orden a medias.
+  it('[D-14] si otra persona crea la misma matrícula a la vez, también es matrícula repetida', async () => {
+    const consultas = preparar(bien(null), bien({ id: ID_CLIENTE }), claveRepetida);
+
+    const intento = crearOrden(NUEVO, ID_TALLER);
+
+    await expect(intento).rejects.toBeInstanceOf(MatriculaRepetida);
+    await expect(intento).rejects.toThrow(new Error(MENSAJES.matriculaRepetida));
+    expect(consultas).toHaveLength(3);
+  });
+
+  it('[D-14] una clave repetida al crear el cliente no se toma por matrícula repetida', async () => {
+    preparar(bien(null), claveRepetida);
+
+    await expect(crearOrden(NUEVO, ID_TALLER)).rejects.toThrow(new Error(MENSAJES.crear));
   });
 });
 

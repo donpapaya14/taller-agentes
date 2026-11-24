@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
 import { ESTADOS, type Estado } from '@/nucleo/orden';
 import { moverOrden } from './mover-orden';
@@ -82,6 +83,52 @@ describe('moverOrden, todos los pares de estados', () => {
 
     expect(resultado.ok).toBe(llega);
     expect(puerto.cambiarEstado).toHaveBeenCalledTimes(llega ? 1 : 0);
+  });
+});
+
+describe('moverOrden, el id viene de un formulario', () => {
+  const NO_ENCONTRADA = { ok: false, motivo: 'No encontramos esa orden' };
+
+  it.each([
+    ['vacío', ''],
+    ['sin formato de uuid', 'no-es-un-uuid'],
+    ['con una cifra de más', `${ID}0`],
+    ['un número', 7],
+    ['nulo', null],
+    ['ausente', undefined],
+    ['una lista', [ID]],
+  ])('[C-4][D-2] un id %s no llega a la base de datos', async (_nombre, id) => {
+    const puerto = puertoQue(true);
+
+    const resultado = await moverOrden({ id, de: 'recibido', a: 'en_reparacion' }, puerto);
+
+    expect(resultado).toEqual(NO_ENCONTRADA);
+    expect(puerto.cambiarEstado).not.toHaveBeenCalled();
+  });
+
+  it('[C-4][D-2] los estados que no son texto tampoco llegan a la base de datos', async () => {
+    const puerto = puertoQue(true);
+
+    const resultados = await Promise.all([
+      moverOrden({ id: ID, de: null, a: 'recibido' }, puerto),
+      moverOrden({ id: ID, de: 'recibido', a: 2 }, puerto),
+      moverOrden({ id: ID, de: undefined, a: undefined }, puerto),
+    ]);
+
+    expect(resultados).toEqual([NO_PERMITIDO, NO_PERMITIDO, NO_PERMITIDO]);
+    expect(puerto.cambiarEstado).not.toHaveBeenCalled();
+  });
+
+  it('[C-4][D-2] ninguna entrada hace lanzar al caso de uso', async () => {
+    const puerto = puertoQue(true);
+
+    await fc.assert(
+      fc.asyncProperty(fc.anything(), fc.anything(), fc.anything(), async (id, de, a) => {
+        const resultado = await moverOrden({ id, de, a }, puerto);
+
+        expect(typeof resultado.ok).toBe('boolean');
+      }),
+    );
   });
 });
 

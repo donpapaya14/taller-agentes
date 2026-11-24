@@ -10,6 +10,16 @@ const esquemaSecreto = z.object({
   DEMO_PASSWORD: obligatoria('DEMO_PASSWORD'),
 });
 
+const esquemaCron = esquemaSecreto.pick({ CRON_SECRET: true });
+
+// El cron decide quién es de fiar con este secreto, y lo decide antes de mirar el resto del
+// entorno: con un entorno a medias, leerlo junto a las demás variables contaría sus faltas a un
+// desconocido. Sin secreto, nadie es de fiar: es null, no un error.
+export function leerCronSecret(env: Entorno = process.env): string | null {
+  const resultado = esquemaCron.safeParse(env);
+  return resultado.success ? resultado.data.CRON_SECRET : null;
+}
+
 export function leerEntornoSecreto(env: Entorno = process.env): {
   claveSecreta: string;
   cronSecret: string;

@@ -44,6 +44,21 @@ describe('traducirErrorCierre', () => {
     expect(traducirErrorCierre(mensaje)).toBe(NO_SE_PUDO);
   });
 
+});
+
+describe('traducirErrorCierre: lo que da Postgres y lo que nadie espera', () => {
+  // El repositorio da nombre a los dos errores de Postgres que no son excepciones nuestras: el
+  // interbloqueo (40P01) y la clave repetida del número de factura (23505).
+  it.each([
+    [
+      'INTERBLOQUEO',
+      'Otra persona está entregando órdenes a la vez. Inténtalo de nuevo en unos segundos',
+    ],
+    ['NUMERO_REPETIDO', 'No se pudo asignar el número de factura. Avisa al administrador'],
+  ])('[C-5][D-14] traduce «%s» a un mensaje que se entiende', (mensaje, esperado) => {
+    expect(traducirErrorCierre(mensaje)).toBe(esperado);
+  });
+
   it('[C-5] el mensaje de stock nombra la referencia que falta', () => {
     const referencia = fc
       .array(fc.constantFrom(...'ABCXYZ0123456789-'), { minLength: 2, maxLength: 20 })
@@ -88,6 +103,29 @@ describe('cerrarOrden', () => {
       expect(puerto.rpcCerrar).not.toHaveBeenCalled();
     },
   );
+
+  it.each([
+    ['vacío', ''],
+    ['sin formato de uuid', 'no-es-un-uuid'],
+    ['un número', 7],
+    ['nulo', null],
+    ['ausente', undefined],
+  ])('[C-5][D-2] un id %s no llega a la base de datos', async (_nombre, id) => {
+    const puerto = puertoQue({ numero: 'F-2026-0002' });
+
+    const resultado = await cerrarOrden({ id, rol: 'jefe' }, puerto);
+
+    expect(resultado).toEqual({ ok: false, motivo: 'No encontramos esa orden' });
+    expect(puerto.rpcCerrar).not.toHaveBeenCalled();
+  });
+
+  it('[C-3] al mecánico se le dice que solo entrega el jefe aunque el id esté mal', async () => {
+    const puerto = puertoQue({ numero: 'F-2026-0002' });
+
+    const resultado = await cerrarOrden({ id: 'basura', rol: 'mecanico' }, puerto);
+
+    expect(resultado).toEqual({ ok: false, motivo: SOLO_EL_JEFE });
+  });
 
   it('[C-5] entrega correcta devuelve el número', async () => {
     const puerto = puertoQue({ numero: 'F-2026-0002' });

@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MUESTRA } from './muestra';
 import { Tablero, type OrdenTablero } from './Tablero';
 
 afterEach(cleanup);
@@ -17,9 +16,19 @@ const orden = (cambios: Partial<OrdenTablero> = {}): OrdenTablero => ({
 
 const columnas = () => screen.getAllByRole('region');
 
+// Nueve órdenes repartidas 3, 3, 2 y 1 entre las cuatro columnas.
+const NUEVE_ORDENES = (
+  [
+    ...['recibido', 'recibido', 'recibido'],
+    ...['en_reparacion', 'en_reparacion', 'en_reparacion'],
+    ...['listo', 'listo'],
+    'entregado',
+  ] as const
+).map((estado, indice) => orden({ id: `orden-${indice + 1}`, estado }));
+
 describe('Tablero: columnas', () => {
   it('[C-10] agrupa las órdenes en cuatro columnas en orden', () => {
-    render(<Tablero ordenes={MUESTRA} puedeEntregar />);
+    render(<Tablero ordenes={NUEVE_ORDENES} puedeEntregar />);
 
     const titulos = columnas().map(
       (columna) => within(columna).getByRole('heading', { level: 2 }).textContent,
@@ -40,13 +49,6 @@ describe('Tablero: columnas', () => {
       expect.stringContaining('Aún no se ha entregado nada'),
     ]);
     expect(screen.queryAllByRole('article')).toEqual([]);
-  });
-
-  it('[C-10] la muestra son nueve órdenes con matrícula de cuatro cifras y tres consonantes', () => {
-    const matriculaEspanola = /^\d{4} [BCDFGHJKLMNPRSTVWXYZ]{3}$/;
-
-    expect(new Set(MUESTRA.map(({ id }) => id)).size).toBe(9);
-    expect(MUESTRA.filter(({ matricula }) => !matriculaEspanola.test(matricula))).toEqual([]);
   });
 });
 
