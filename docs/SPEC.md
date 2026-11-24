@@ -1181,12 +1181,12 @@ Requiere: revisor adversarial sin bloqueantes abiertos y OK de Vladys a publicar
   - Vercel: cuenta personal en el plan Hobby, siempre con su token en `VERCEL_TOKEN` (`vercel --token="$VERCEL_TOKEN"`); ninguna otra cuenta ni equipo.
   - Un proyecto creado por CLI puede quedar con el preset «Other» y dar 404 en todo: `vercel.json` ya lleva `"framework": "nextjs"`. Un despliegue puede quedar en `BLOCKED` por el autor del commit: se ve con `--debug`, campo `readyStateReason`.
   - `.env.local` tiene los valores de `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `CRON_SECRET`, `DEMO_PASSWORD`.
-  - `gate.yml`, job `desplegar`: usa el entorno `produccion` con los secretos `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` y la variable `URL_PRODUCCION`.
+  - `gate.yml`, job `desplegar`: usa el entorno `produccion` con los secretos `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` y `DEMO_PASSWORD` (este solo lo ve el paso del smoke) y la variable `URL_PRODUCCION`.
 - **Contrato exacto**, en este orden:
   1. `gitleaks git --no-banner` sobre todo el historial → sin hallazgos. Búsqueda de términos privados con la lista que la sesión principal pasa desde fuera del repo → sin resultados.
   2. `gh auth status` con `donpapaya14` activa (si no, `gh auth switch -u donpapaya14`). `vercel link --yes --project taller-agentes --token="$VERCEL_TOKEN"` (crea el proyecto en la cuenta personal). Leer `orgId` y `projectId` de `.vercel/project.json`.
   3. Variables de producción en Vercel (`vercel env add <NOMBRE> production --token="$VERCEL_TOKEN"` para las cinco).
-  4. En GitHub: entorno `produccion` con los tres secretos y la variable `URL_PRODUCCION` (`gh secret set … --env produccion`, `gh variable set URL_PRODUCCION --env produccion`).
+  4. En GitHub: entorno `produccion` con los cuatro secretos (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `DEMO_PASSWORD`) y la variable `URL_PRODUCCION` (`gh secret set … --env produccion`, `gh variable set URL_PRODUCCION --env produccion`).
   5. `gh workflow run gate.yml -f desplegar=true --ref main` → esperar → gate completo en verde y job `desplegar` terminado.
   6. `gh repo edit donpapaya14/taller-agentes --visibility public --accept-visibility-change-consequences`.
   7. `URL_BASE=<producción> REPO=donpapaya14/taller-agentes DEMO_PASSWORD=… npm run checklist` → pegar la tabla entera.
