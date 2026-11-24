@@ -26,12 +26,19 @@ const CASOS = [
   { texto: 'M1234ABC', esperado: null },
   { texto: '', esperado: null },
   { texto: 'abc', esperado: null },
+  // «ß» pasa a «SS» y «ﬁ» a «FI»: darían por buena una matrícula que nadie escribió.
+  { texto: 'M1234ß', esperado: null },
+  { texto: '1234Bß', esperado: null },
+  { texto: 'ﬀ1234AB', esperado: null },
+  { texto: 'M1234ﬁ', esperado: null },
 ];
 
 const cuatroCifras = fc.stringMatching(/^\d{4}$/);
 const tresConsonantes = fc.stringMatching(/^[BCDFGHJKLMNPRSTVWXYZ]{3}$/);
 const unaODosLetras = fc.stringMatching(/^[A-Z]{1,2}$/);
 const separador = fc.constantFrom('', ' ', '-', ' - ');
+// Letras que en mayúsculas se escriben con dos letras de la A a la Z: «ß» → «SS», «ﬁ» → «FI».
+const letraDeDosMayusculas = fc.constantFrom('ß', 'ﬀ', 'ﬁ', 'ﬂ', 'ﬅ', 'ﬆ');
 
 describe('matrícula', () => {
   it.each(CASOS)('[C-11] normaliza matrículas: "$texto"', ({ texto, esperado }) => {
@@ -75,6 +82,24 @@ describe('matrícula', () => {
           const escrita = [provincia.toLowerCase(), cifras, final].join(entre);
 
           expect(normalizarMatricula(escrita)).toBe(`${provincia}${cifras}${final}`);
+        },
+      ),
+    );
+  });
+});
+
+describe('matrícula: letras que cambian de longitud al pasar a mayúsculas', () => {
+  it('[C-11] una letra que en mayúsculas se escribe con dos no vale como letra de la matrícula', () => {
+    fc.assert(
+      fc.property(
+        unaODosLetras,
+        cuatroCifras,
+        letraDeDosMayusculas,
+        fc.boolean(),
+        (letras, cifras, rara, alPrincipio) => {
+          const escrita = alPrincipio ? `${rara}${cifras}${letras}` : `${letras}${cifras}${rara}`;
+
+          expect(normalizarMatricula(escrita)).toBeNull();
         },
       ),
     );
