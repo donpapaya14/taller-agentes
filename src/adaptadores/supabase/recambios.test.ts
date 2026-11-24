@@ -97,24 +97,47 @@ describe('listarRecambios', () => {
   });
 });
 
+// El resultado dice por qué no se guardó: una referencia repetida se corrige en el formulario; un
+// recambio que no se toca (de otro taller, ya no existe, o lo edita quien no puede) no.
+const GUARDADO = { ok: true };
+const REFERENCIA_REPETIDA = { ok: false, motivo: 'referencia_repetida' };
+const SIN_PERMISO_O_NO_ENCONTRADO = { ok: false, motivo: 'sin_permiso_o_no_encontrado' };
+
 describe('guardarRecambio', () => {
-  it.each(FORMAS)('sin fallo %s la fila y dice true', async (_forma, id, respuesta, llamadas) => {
-    const consultas = preparar(respuesta);
+  it.each(FORMAS)(
+    'sin fallo %s la fila y dice que se guardó',
+    async (_forma, id, respuesta, llamadas) => {
+      const consultas = preparar(respuesta);
 
-    expect(await guardarRecambio({ ...DATOS, ...id }, ID_TALLER)).toBe(true);
-    expect(consultas).toEqual([llamadas]);
-  });
+      expect(await guardarRecambio({ ...DATOS, ...id }, ID_TALLER)).toEqual(GUARDADO);
+      expect(consultas).toEqual([llamadas]);
+    },
+  );
 
-  it('al editar, dice false si no tocó ninguna fila', async () => {
+  it('[C-3] al editar, sin ninguna fila tocada dice que no hay permiso o no se encontró', async () => {
     preparar(bien([]));
 
-    expect(await guardarRecambio({ ...DATOS, id: ID_RECAMBIO }, ID_TALLER)).toBe(false);
+    expect(await guardarRecambio({ ...DATOS, id: ID_RECAMBIO }, ID_TALLER)).toEqual(
+      SIN_PERMISO_O_NO_ENCONTRADO,
+    );
   });
 
-  it.each(FORMAS)('si la referencia ya existe en el taller, %s dice false', async (_forma, id) => {
-    preparar(claveRepetida);
+  it.each(FORMAS)(
+    '[D-14] si la referencia ya existe en el taller, %s dice que está repetida',
+    async (_forma, id) => {
+      preparar(claveRepetida);
 
-    expect(await guardarRecambio({ ...DATOS, ...id }, ID_TALLER)).toBe(false);
+      expect(await guardarRecambio({ ...DATOS, ...id }, ID_TALLER)).toEqual(REFERENCIA_REPETIDA);
+    },
+  );
+
+  it('[D-14] una referencia repetida y una edición que no toca nada no se confunden', async () => {
+    preparar(claveRepetida, bien([]));
+
+    const repetida = await guardarRecambio({ ...DATOS, id: ID_RECAMBIO }, ID_TALLER);
+    const sinTocar = await guardarRecambio({ ...DATOS, id: ID_RECAMBIO }, ID_TALLER);
+
+    expect(repetida).not.toEqual(sinTocar);
   });
 });
 

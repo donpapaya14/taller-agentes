@@ -20,6 +20,19 @@ type RecambioAGuardar = {
   id?: string;
 };
 
+// Por qué no se guardó. Una referencia repetida se corrige en el formulario; el resto es un recambio
+// que no se tocó: es de otro taller, ya no existe o lo edita quien no puede (la política de RLS no
+// le deja ver la fila y el update no afecta a ninguna).
+type Resultado =
+  { ok: true } | { ok: false; motivo: 'referencia_repetida' | 'sin_permiso_o_no_encontrado' };
+
+const GUARDADO: Resultado = { ok: true };
+const REFERENCIA_REPETIDA: Resultado = { ok: false, motivo: 'referencia_repetida' };
+const SIN_PERMISO_O_NO_ENCONTRADO: Resultado = {
+  ok: false,
+  motivo: 'sin_permiso_o_no_encontrado',
+};
+
 const VIOLACION_DE_UNICIDAD = '23505';
 
 const MENSAJES = {
@@ -38,17 +51,18 @@ export async function listarRecambios(): Promise<Recambio[]> {
   return leerFilas(z.array(filaRecambio), data, 'los recambios');
 }
 
-// Una referencia repetida en el taller no es un fallo: no se guarda y se dice con false. Cualquier
-// otro error, también el de la política de RLS cuando escribe un mecánico, lanza un mensaje.
-function noHuboFallo(error: PostgrestError | null): boolean {
-  if (error === null) return true;
-  if (error.code === VIOLACION_DE_UNICIDAD) return false;
+// Una referencia repetida en el taller no es un fallo: no se guarda y se dice por qué. Sin error es
+// que la base de datos aceptó el cambio (null). Cualquier otro error, también el de la política de
+// RLS cuando inserta un mecánico, lanza un mensaje.
+function rechazoDe(error: PostgrestError | null): Resultado | null {
+  if (error === null) return null;
+  if (error.code === VIOLACION_DE_UNICIDAD) return REFERENCIA_REPETIDA;
   throw new Error(MENSAJES.guardar);
 }
 
 // Sin id crea el recambio; con id edita ese. Siempre con insert o update y solo las columnas que la
 // API deja escribir: un upsert chocaría con los permisos por columna.
-export async function guardarRecambio(d: RecambioAGuardar, tallerId: string): Promise<boolean> {
+export async function guardarRecambio(d: RecambioAGuardar, tallerId: string): Promise<Resultado> {
   const cliente = await crearClienteServidor();
   const columnas = {
     referencia: d.referencia,
@@ -60,7 +74,7 @@ export async function guardarRecambio(d: RecambioAGuardar, tallerId: string): Pr
 
   if (d.id === undefined) {
     const { error } = await cliente.from('recambios').insert({ taller_id: tallerId, ...columnas });
-    return noHuboFallo(error);
+    return rechazoDe(error) ?? GUARDADO;
   }
 
   const { data, error } = await cliente
@@ -68,5 +82,7 @@ export async function guardarRecambio(d: RecambioAGuardar, tallerId: string): Pr
     .update(columnas)
     .eq('id', d.id)
     .select('id');
-  return noHuboFallo(error) && algunaFilaTocada(data);
+  const rechazo = rechazoDe(error);
+  if (rechazo !== null) return rechazo;
+  return algunaFilaTocada(data) ? GUARDADO : SIN_PERMISO_O_NO_ENCONTRADO;
 }
