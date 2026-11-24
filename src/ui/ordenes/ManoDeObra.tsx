@@ -1,4 +1,4 @@
-import { Boton } from '../Boton';
+import { BotonDeEnvio } from '../BotonDeEnvio';
 
 type PropsManoDeObra = {
   ordenId: string;
@@ -31,9 +31,7 @@ export function ManoDeObra({ ordenId, minutos, accion }: PropsManoDeObra) {
           className="min-h-toque w-full min-w-0 rounded-pieza border border-raya bg-chapa-alta px-e4 text-base text-hueso"
         />
       </div>
-      <Boton type="submit" variante="secundario">
-        Guardar mano de obra
-      </Boton>
+      <BotonDeEnvio variante="secundario">Guardar mano de obra</BotonDeEnvio>
     </form>
   );
 }

@@ -218,14 +218,16 @@ describe('restablecer', () => {
     );
   });
 
-  it('[C-13] con un restablecimiento reciente dice que pruebe a entrar y repone igualmente las contraseñas', async () => {
+  it('[C-13] con un restablecimiento reciente dice que pruebe a entrar y no repone las contraseñas', async () => {
     rpcRestablecer.mockResolvedValue('EN_ESPERA');
 
     expect(await restablecer()).toEqual({
       tipo: 'ok',
       texto: 'La demo se restableció hace menos de 10 minutos. Prueba a entrar',
     });
-    expect(reponerContrasenas).toHaveBeenCalledTimes(1);
+    // Cualquiera puede pulsar el enlace: reponer las contraseñas son llamadas de administración a
+    // Auth, y con la espera de 10 minutos solo las hace el cron.
+    expect(reponerContrasenas).not.toHaveBeenCalled();
   });
 });
 

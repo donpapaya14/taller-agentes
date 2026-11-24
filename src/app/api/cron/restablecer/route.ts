@@ -28,6 +28,7 @@ export async function GET(peticion: Request): Promise<Response> {
   const faltaEntorno = entornoIncompleto();
   if (faltaEntorno !== null) return faltaEntorno;
 
-  const resultado = await restablecerDentroDelPlazo();
+  // El cron ya mostró su secreto: también con la espera de 10 minutos repone las contraseñas.
+  const resultado = await restablecerDentroDelPlazo({ reponerEnEspera: true });
   return Response.json(resultado, { status: resultado.estado === 'ERROR' ? 500 : 200 });
 }

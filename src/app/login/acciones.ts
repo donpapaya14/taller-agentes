@@ -91,10 +91,12 @@ const TEXTO_DE_RESTABLECIDO = 'Demo restablecida. Ya puedes entrar';
 const TEXTO_DE_EN_ESPERA = 'La demo se restableció hace menos de 10 minutos. Prueba a entrar';
 
 // Quien pulsa «Restablecer la demo» no ha entrado, así que no hace falta ninguna sesión: el control
-// está en la base de datos (una vez cada 10 minutos). Solo recibe lo que restablecerDemo deja
-// contar: nunca qué variable falta ni qué contestó la base de datos.
+// está en la base de datos (una vez cada 10 minutos). Con esa espera no repone las contraseñas:
+// cualquiera puede pulsar y reponerlas son llamadas de administración a Auth, que solo hace el
+// cron. Solo recibe lo que restablecerDemo deja contar: nunca qué variable falta ni qué contestó
+// la base de datos.
 export async function restablecer(): Promise<ResultadoDeRestablecer> {
-  const resultado = await restablecerDentroDelPlazo();
+  const resultado = await restablecerDentroDelPlazo({ reponerEnEspera: false });
   if (resultado.estado === 'ERROR') return { tipo: 'error', texto: resultado.motivo };
   const restablecida = resultado.estado === 'RESTABLECIDO';
   return { tipo: 'ok', texto: restablecida ? TEXTO_DE_RESTABLECIDO : TEXTO_DE_EN_ESPERA };

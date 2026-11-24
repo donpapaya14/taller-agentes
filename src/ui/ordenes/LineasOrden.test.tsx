@@ -159,3 +159,29 @@ describe('LineasOrden: editar', () => {
     expect(botones.filter((boton) => ![...boton.classList].includes('min-h-toque'))).toEqual([]);
   });
 });
+
+describe('LineasOrden: un solo envío', () => {
+  // Un segundo toque repetiría el cambio de cantidad o buscaría una línea que ya no existe.
+  it.each(['Guardar', 'Quitar'])(
+    '[D-13] mientras se envía, «%s» queda desactivado para no enviar dos veces',
+    async (texto) => {
+      const sinTerminar = () =>
+        vi.fn<(datos: FormData) => void>(() => new Promise<void>(() => undefined));
+      render(
+        <LineasOrden
+          lineas={[FILTRO]}
+          verImportes
+          editable
+          accionCantidad={sinTerminar()}
+          accionQuitar={sinTerminar()}
+        />,
+      );
+
+      const boton = screen.getByRole('button', { name: texto });
+
+      fireEvent.click(boton);
+
+      await waitFor(() => expect(boton.hasAttribute('disabled')).toBe(true));
+    },
+  );
+});
