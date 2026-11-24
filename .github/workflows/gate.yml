@@ -41,13 +41,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      # Las acciones van fijadas por el SHA del commit de su versión (la versión, en el comentario):
+      # una etiqueta se puede mover y un SHA no. Dependabot propone las subidas.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
       # Versión fija y no la de .nvmrc: las puertas usan fs.globSync, que no existe en Node 20.
       # Es la misma línea mayor con la que check:full corre en la Mac.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
@@ -69,7 +71,7 @@ jobs:
           echo "BASE=$base" >> "$GITHUB_ENV"
           mkdir -p "$DIR" reports
 
-      # --- Puertas del proyecto: scripts de package.json con nombre fijo (ADOPTAR.md) ---------
+      # --- Puertas del proyecto: scripts de package.json con nombre fijo ----------------------
       - name: lint
         run: node "$PUERTAS/run-check.mjs" lint --out "$DIR" -- npm run lint
 
@@ -101,36 +103,38 @@ jobs:
 
       # --- Seguridad: herramientas externas, sin cuenta ni clave ------------------------------
       # Se descargan aparte y en silencio: el informe guarda las últimas 80 líneas de cada puerta
-      # y el progreso de `docker pull` tapaba los hallazgos.
+      # y el progreso de `docker pull` tapaba los hallazgos. Cada imagen lleva su versión, sin
+      # `latest`: lo que revisa el gate hoy es lo que lo revisará dentro de seis meses. Dependabot
+      # no ve estas líneas: las versiones se suben a mano.
       - name: Descargar imágenes de seguridad
         run: |
-          docker pull -q ghcr.io/gitleaks/gitleaks:latest
-          docker pull -q semgrep/semgrep
-          docker pull -q ghcr.io/google/osv-scanner:latest
+          docker pull -q ghcr.io/gitleaks/gitleaks:v8.30.1
+          docker pull -q semgrep/semgrep:1.185.0
+          docker pull -q ghcr.io/google/osv-scanner:v2.7.1
 
       - name: secretos (gitleaks)
         run: >
           node "$PUERTAS/run-check.mjs" secretos --out "$DIR" --
-          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1
           detect --source /repo --no-banner --redact
 
       - name: sast (semgrep)
         run: >
           node "$PUERTAS/run-check.mjs" sast --out "$DIR" --
-          docker run --rm -v "$PWD:/src" semgrep/semgrep
+          docker run --rm -v "$PWD:/src" semgrep/semgrep:1.185.0
           semgrep scan --config p/default --error --quiet --metrics=off /src
 
       - name: dependencias (osv-scanner)
         run: >
           node "$PUERTAS/run-check.mjs" dependencias --out "$DIR" --
-          docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:latest
+          docker run --rm -v "$PWD:/src" ghcr.io/google/osv-scanner:v2.7.1
           scan source --lockfile /src/package-lock.json
 
       # --- Gate completo: Supabase local, usuarios de demostración y navegador ----------------
       # Los necesitan gate:e2e y gate:a11y (gate:rls usa PGlite). Las claves salen del
       # `supabase status` del propio runner: son las de esa base local, no un secreto del repo.
       # ANON_KEY y SERVICE_ROLE_KEY sirven de respaldo si la CLI no entrega las claves nuevas.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         if: env.NIVEL == 'completo'
 
       - name: Supabase local, usuarios de demostración y navegador
@@ -175,7 +179,7 @@ jobs:
 
       - name: Guardar informes
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: gate-${{ github.sha }}
           path: |
@@ -202,13 +206,20 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       URL_BASE: ${{ vars.URL_PRODUCCION }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - name: Desplegar
         run: npm run desplegar
+      # El smoke es una prueba de Playwright: el runner de GitHub no trae el navegador.
+      - name: Instalar el navegador del smoke
+        run: npx playwright install --with-deps chromium
+      # El smoke entra con la contraseña de la demo. Va solo en este paso, no en todo el job: así
+      # `npm ci` y el despliegue no la ven.
       - name: Smoke de producción
+        env:
+          DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
         run: npm run smoke

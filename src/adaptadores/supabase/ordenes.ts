@@ -94,7 +94,9 @@ export async function leerOrden(id: string): Promise<OrdenDetalle | null> {
     .select(SELECCION_ORDEN_DETALLE)
     .eq('id', id)
     .maybeSingle();
-  if (error) throw new Error(MENSAJES.leerOrden);
+  // El error de Supabase va como causa: quien captura distingue «la base de datos dijo que no» de un
+  // fallo de programación, y solo este último hay que relanzarlo.
+  if (error) throw new Error(MENSAJES.leerOrden, { cause: error });
 
   return data === null ? null : leerFilas(filaOrdenDetalle, data, 'la orden');
 }

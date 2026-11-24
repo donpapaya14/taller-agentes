@@ -21,4 +21,23 @@ Lo que Testing comprueba en cada ronda. Un fallo cita una de estas directrices y
 | D-15 | Una ronda es honesta: todo fallo lleva evidencia y el veredicto `PASA` exige cero fallos y todos los comandos en verde         | test `[D-15]` sobre el esquema de ronda                           |
 
 <!-- estado:inicio -->
+| ID | Estado | Tests (n) | Fecha |
+|---|---|---|---|
+| D-1 | VERIFICADO | 16 | 2026-11-24 |
+| D-2 | VERIFICADO | 433 | 2026-11-24 |
+| D-3 | VERIFICADO | 14 | 2026-11-24 |
+| D-4 | VERIFICADO | 8 | 2026-11-24 |
+| D-5 | VERIFICADO | 66 | 2026-11-24 |
+| D-6 | VERIFICADO | 2 | 2026-11-24 |
+| D-7 | VERIFICADO | 1 | 2026-11-24 |
+| D-8 | VERIFICADO | 2 | 2026-11-24 |
+| D-9 | VERIFICADO | 8 | 2026-11-24 |
+| D-10 | VERIFICADO | 9 | 2026-11-24 |
+| D-11 | VERIFICADO | 21 | 2026-11-24 |
+| D-12 | VERIFICADO | 7 | 2026-11-24 |
+| D-13 | MANUAL | 50 | 2026-11-24 |
+| D-14 | VERIFICADO | 254 | 2026-11-24 |
+| D-15 | VERIFICADO | 7 | 2026-11-24 |
+
+Resumen: 15 criterios: 14 VERIFICADO, 0 ROJO, 0 SIN TEST, 1 MANUAL, 0 OMITIDO.
 <!-- estado:fin -->

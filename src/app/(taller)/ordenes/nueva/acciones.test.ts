@@ -21,6 +21,7 @@ vi.mock('@/adaptadores/supabase/ordenes', async (importOriginal) => ({
 }));
 
 const SESION = SESION_MECANICO;
+const TALLER_AJENO = 'taller-ajeno-7';
 const VEHICULO_ELEGIDO = '3f2b8a4e-6c1d-4e7a-9b0f-5d2c8e1a7b64';
 const ANTES: EstadoFormulario = { errores: {}, motivo: null, valores: {} };
 
@@ -95,6 +96,16 @@ describe('crearOrdenAccion: crear la orden', () => {
       },
       't-1',
     );
+  });
+
+  it('[C-2] el taller de la orden es el de la sesión, aunque el formulario traiga otro', async () => {
+    const campos = { ...VEHICULO_NUEVO, tallerId: TALLER_AJENO, taller_id: TALLER_AJENO };
+
+    await expect(crearOrdenAccion(ANTES, formulario(campos))).rejects.toThrow('REDIRIGE:');
+
+    const [datos, tallerId] = vi.mocked(crearOrden).mock.calls[0];
+    expect(tallerId).toBe(SESION.tallerId);
+    expect(JSON.stringify(datos)).not.toContain(TALLER_AJENO);
   });
 
   it('[C-11] el tablero se actualiza antes de abrir la ficha', async () => {

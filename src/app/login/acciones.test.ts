@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorDeEntorno } from '@/adaptadores/supabase/entorno';
 import { PLAZO_TOTAL_MS } from '@/adaptadores/supabase/tiempo-limite';
 import { USUARIOS_DEMO } from '@/aplicacion/acceso';
+import { falloDeSupabase } from '../../../tests/apoyo/fallos-falsos';
 import { entrar, entrarComoDemo, restablecer, salir } from './acciones';
 
 const { cliente, crearClienteServidor, redirect, rpcRestablecer, reponerContrasenas } = vi.hoisted(
@@ -236,24 +237,31 @@ describe('restablecer: cuando algo falla', () => {
 
   it.each([
     [
-      'la base de datos falla',
-      () => rpcRestablecer.mockRejectedValue(new Error('connection refused')),
-    ],
-    [
-      'faltan las variables de entorno',
-      () => rpcRestablecer.mockRejectedValue(new ErrorDeEntorno('Falta SUPABASE_SECRET_KEY')),
+      'la base de datos falla con un error con código',
+      () => rpcRestablecer.mockRejectedValue(falloDeSupabase('connection refused', '08006')),
     ],
     [
       'no se pueden reponer las contraseñas',
       () => {
         rpcRestablecer.mockResolvedValue('RESTABLECIDO');
-        reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
+        reponerContrasenas.mockRejectedValue(falloDeSupabase('Auth caído', 'unexpected_failure'));
       },
     ],
   ])('[C-13][D-14] si %s, dice el motivo sin el detalle', async (_caso, preparar) => {
     preparar();
 
     expect(await restablecer()).toEqual({ tipo: 'error', texto: MOTIVO });
+  });
+
+  // Lo que la aplicación no sabe contar no se disfraza de «No se pudo restablecer la demo»: se relanza,
+  // y en producción Next no cuenta al navegador ni qué variable falta ni qué dijo la base de datos.
+  it.each([
+    ['faltan las variables de entorno', new ErrorDeEntorno('Falta SUPABASE_SECRET_KEY')],
+    ['la base falla sin ningún código', new Error('connection refused')],
+  ])('[C-13][D-14] si %s, el fallo se relanza', async (_caso, error) => {
+    rpcRestablecer.mockRejectedValue(error);
+
+    await expect(restablecer()).rejects.toBe(error);
   });
 
   it('[C-13][D-14] si Supabase no contesta a tiempo, lo dice y no se queda esperando', async () => {

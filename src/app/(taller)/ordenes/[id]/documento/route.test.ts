@@ -4,6 +4,7 @@ import type { OrdenDetalle } from '@/adaptadores/supabase/filas';
 import { leerOrden } from '@/adaptadores/supabase/ordenes';
 import { leerSesion } from '@/adaptadores/supabase/sesion';
 import { bien, mal, preparar } from '../../../../../../tests/apoyo/cliente-falso';
+import { falloDeSupabase } from '../../../../../../tests/apoyo/fallos-falsos';
 import { ID_ORDEN, ORDEN_DETALLE } from '../../../../../../tests/apoyo/filas-de-ejemplo';
 import {
   redirect,
@@ -66,7 +67,9 @@ describe('GET /ordenes/[id]/documento: quién puede', () => {
   });
 
   it('[D-14] un fallo al leer la sesión se cuenta con un 500 que se entiende, sin redirigir', async () => {
-    vi.mocked(leerSesion).mockRejectedValue(new Error('Falta la variable de entorno SUPABASE_URL'));
+    vi.mocked(leerSesion).mockRejectedValue(
+      falloDeSupabase('No se pudo cargar tu taller. Inténtalo de nuevo en unos minutos.'),
+    );
 
     const respuesta = await pedir();
 
@@ -239,11 +242,13 @@ describe('GET /ordenes/[id]/documento: cuando algo falla', () => {
   const NO_SE_PUDO = 'No se pudo generar el documento. Inténtalo de nuevo.';
 
   it.each([
-    ['la lectura de la orden', () => vi.mocked(leerOrden).mockRejectedValue(new Error('boom'))],
-    ['la lectura del taller', () => preparar(mal('boom'))],
+    [
+      'la lectura de la orden, con un error de Supabase',
+      () => vi.mocked(leerOrden).mockRejectedValue(falloDeSupabase('boom')),
+    ],
+    ['la lectura del taller, con un error de Supabase', () => preparar(mal('boom', '42501'))],
     ['una fila de taller que no es la esperada', () => preparar(bien({ nombre: 5 }))],
     ['un taller que no existe', () => preparar(bien(null))],
-    ['el generador del PDF', () => vi.mocked(generarPdf).mockRejectedValue(new Error('boom'))],
   ])('[D-14] si falla %s responde 500 con un texto que se entiende', async (_caso, romper) => {
     romper();
 
@@ -251,5 +256,26 @@ describe('GET /ordenes/[id]/documento: cuando algo falla', () => {
 
     expect(respuesta.status).toBe(500);
     expect(await respuesta.text()).toBe(NO_SE_PUDO);
+  });
+});
+
+// Lo que la aplicación no sabe contar no se disfraza de texto: se relanza y lo registra Next.
+describe('GET /ordenes/[id]/documento: un fallo inesperado', () => {
+  const INESPERADO = new TypeError('x is not a function');
+
+  it.each([
+    ['la sesión', () => vi.mocked(leerSesion).mockRejectedValue(INESPERADO)],
+    ['la lectura de la orden', () => vi.mocked(leerOrden).mockRejectedValue(INESPERADO)],
+    ['el generador del PDF', () => vi.mocked(generarPdf).mockRejectedValue(INESPERADO)],
+  ])('[D-14] si falla %s se relanza tal cual', async (_caso, romper) => {
+    romper();
+
+    await expect(pedir()).rejects.toBe(INESPERADO);
+  });
+
+  it('[D-14] una lectura del taller que falla sin código de error se relanza', async () => {
+    preparar(mal('boom'));
+
+    await expect(pedir()).rejects.toThrow('No se pudo leer el taller');
   });
 });

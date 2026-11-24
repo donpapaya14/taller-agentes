@@ -90,6 +90,10 @@ describe('next.config', () => {
     expect(nextConfig.images).toEqual({ unoptimized: true });
   });
 
+  it('[C-18] next.config no anuncia el framework en la cabecera X-Powered-By', () => {
+    expect(nextConfig.poweredByHeader).toBe(false);
+  });
+
   it('[C-18] next.config no activa Cache Components', () => {
     const texto = readFileSync(resolve(import.meta.dirname, '../../next.config.ts'), 'utf8');
 

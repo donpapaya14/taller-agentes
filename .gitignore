@@ -49,3 +49,6 @@ playwright-report/
 
 # supabase
 supabase/.temp/
+
+# Lo genera `next dev` (SPEC, Decisiones del paso 1); el orquestador de este repo es CLAUDE.md.
+/AGENTS.md

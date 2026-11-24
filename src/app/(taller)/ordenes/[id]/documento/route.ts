@@ -5,6 +5,7 @@ import { crearClienteServidor } from '@/adaptadores/supabase/cliente-servidor';
 import type { OrdenDetalle } from '@/adaptadores/supabase/filas';
 import { leerOrden } from '@/adaptadores/supabase/ordenes';
 import { leerSesion, type Sesion } from '@/adaptadores/supabase/sesion';
+import { esFalloEsperado } from '@/aplicacion/fallo-esperado';
 import { construirDocumento, type DocumentoOrden, type EntradaDocumento } from '@/nucleo/documento';
 import { puede } from '@/nucleo/permisos';
 
@@ -97,9 +98,15 @@ async function documentoPdf(orden: OrdenDetalle, tallerId: string): Promise<Resp
   });
 }
 
+// Un fallo que la aplicación sabe contar se cuenta con un texto, no con una página en blanco: esto
+// se abre en otra pestaña. Uno que no sabe contar se relanza: lo registra Next y lo enseña Vercel.
+function contarFallo(error: unknown, mensaje: string): Response {
+  if (esFalloEsperado(error)) return texto(mensaje, 500);
+  throw error;
+}
+
 // El PDF lleva importes: solo lo descarga quien puede verlos. El proxy no es la barrera: la sesión
-// se comprueba aquí, antes de leer nada. Un fallo se cuenta con un texto, no con una página en
-// blanco: esto se abre en otra pestaña.
+// se comprueba aquí, antes de leer nada.
 export async function GET(
   _peticion: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -107,8 +114,8 @@ export async function GET(
   let sesion: Sesion | null;
   try {
     sesion = await leerSesion();
-  } catch {
-    return texto(MENSAJES.sesion, 500);
+  } catch (error) {
+    return contarFallo(error, MENSAJES.sesion);
   }
   if (sesion === null) redirect('/login');
   if (!puede(sesion.rol, 'ver_importes')) return texto(MENSAJES.soloElJefe, 403);
@@ -118,7 +125,7 @@ export async function GET(
     return orden === null
       ? texto(MENSAJES.noEncontrada, 404)
       : await documentoPdf(orden, sesion.tallerId);
-  } catch {
-    return texto(MENSAJES.noSePudo, 500);
+  } catch (error) {
+    return contarFallo(error, MENSAJES.noSePudo);
   }
 }

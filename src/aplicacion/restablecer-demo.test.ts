@@ -1,5 +1,6 @@
 import * as crypto from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
+import { falloDeSupabase } from '../../tests/apoyo/fallos-falsos';
 import { autorizado, restablecerDemo } from './restablecer-demo';
 
 // Envuelve timingSafeEqual para ver si se usa; sigue haciendo lo mismo que el original.
@@ -60,7 +61,7 @@ describe('restablecerDemo', () => {
 describe('restablecerDemo: cuando algo falla', () => {
   it('[C-13][D-14] con la base en espera, si el cron no puede reponer las contraseñas devuelve ERROR con mensaje', async () => {
     const { puerto, reponerContrasenas } = puertoQueResponde('EN_ESPERA');
-    reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
+    reponerContrasenas.mockRejectedValue(falloDeSupabase('Auth caído', 'unexpected_failure'));
 
     const resultado = await restablecerDemo(puerto, DEL_CRON);
 
@@ -68,7 +69,9 @@ describe('restablecerDemo: cuando algo falla', () => {
   });
 
   it('[C-13][D-14] si la base de datos falla devuelve ERROR con mensaje', async () => {
-    const { puerto, reponerContrasenas } = puertoQueResponde(new Error('connection refused'));
+    const { puerto, reponerContrasenas } = puertoQueResponde(
+      falloDeSupabase('connection refused', '08006'),
+    );
 
     const resultado = await restablecerDemo(puerto, DEL_CRON);
 
@@ -78,7 +81,7 @@ describe('restablecerDemo: cuando algo falla', () => {
 
   it('[C-13][D-14] si no se pueden reponer las contraseñas devuelve ERROR con mensaje', async () => {
     const { puerto, reponerContrasenas } = puertoQueResponde('RESTABLECIDO');
-    reponerContrasenas.mockRejectedValue(new Error('Auth caído'));
+    reponerContrasenas.mockRejectedValue(falloDeSupabase('Auth caído', 'unexpected_failure'));
 
     const resultado = await restablecerDemo(puerto, DE_UN_VISITANTE);
 
@@ -104,6 +107,36 @@ describe('restablecerDemo: cuando algo falla', () => {
 
       expect(resultado).toEqual({ estado: 'ERROR', motivo: MOTIVO });
       expect(reponerContrasenas).not.toHaveBeenCalled();
+    },
+  );
+});
+
+// Lo que la aplicación no sabe contar no se esconde detrás de «No se pudo restablecer la demo»: se
+// relanza tal cual para que Next lo registre y Vercel lo enseñe.
+describe('restablecerDemo: un fallo inesperado', () => {
+  const INESPERADOS = [
+    ['un Error corriente', new Error('boom')],
+    ['un TypeError', new TypeError('x is not a function')],
+    ['un fallo de red de Supabase, con el código vacío', falloDeSupabase('fetch failed', '')],
+  ] as const;
+
+  it.each(INESPERADOS)(
+    '[C-13][D-14] si la base falla con %s, se relanza y no repone nada',
+    async (_caso, error) => {
+      const { puerto, reponerContrasenas } = puertoQueResponde(error);
+
+      await expect(restablecerDemo(puerto, DEL_CRON)).rejects.toBe(error);
+      expect(reponerContrasenas).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(INESPERADOS)(
+    '[C-13][D-14] si reponer las contraseñas falla con %s, se relanza',
+    async (_caso, error) => {
+      const { puerto, reponerContrasenas } = puertoQueResponde('RESTABLECIDO');
+      reponerContrasenas.mockRejectedValue(error);
+
+      await expect(restablecerDemo(puerto, DE_UN_VISITANTE)).rejects.toBe(error);
     },
   );
 });
