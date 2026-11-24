@@ -45,7 +45,7 @@
     "id": "f08-documentos-demo",
     "titulo": "PDF y demo restablecible",
     "resumen": "El PDF de cada orden y la acción y el cron que restablecen la demo.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f09-pantallas-acceso",
