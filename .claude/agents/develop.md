@@ -24,7 +24,7 @@ Haces lo que dice el bloque y nada más: lo que falte o sobre va al informe, no 
 - El nombre del test lleva el ID de lo que demuestra: `[C-n]` si es un criterio, `[D-n]` si es una directriz.
 - Los tests de `src/nucleo` y `src/aplicacion` van al lado del archivo que prueban (D-6).
 - Los cálculos del núcleo llevan tests de propiedades, no solo ejemplos.
-- Antes del commit, `npm run check` en verde. El hook lo vuelve a correr.
+- Antes del commit, `npm run check` en verde. El hook de commit (`.githooks/pre-commit`) lo vuelve a correr.
 - Commit de la primera entrega: `feat(<feature>): <qué> [ronda 1]`, con el `id` de `proceso/features.json`.
 
 ## Capas

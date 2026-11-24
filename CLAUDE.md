@@ -32,7 +32,7 @@ Las rondas no se inventan ni se retocan después. Si Testing no encuentra fallos
 
 ### Trabajo en paralelo
 
-- Un paso que corre a la vez que otro va en su propia copia de trabajo: `git worktree add ../taller-agentes-wt/paso-<N> -b paso-<N>` desde `main`, después `npm ci` y, si el paso lo pide, una copia de `.env.local`. El hook de commit corre `npm run check` sobre todo el árbol y el código a medias de otro agente lo pondría en rojo.
+- Un paso que corre a la vez que otro va en su propia copia de trabajo: `git worktree add ../taller-agentes-wt/paso-<N> -b paso-<N>` desde `main`, después `npm ci` y, si el paso lo pide, una copia de `.env.local`. El hook de commit (`.githooks/pre-commit`) corre `npm run check` sobre todo el árbol y el código a medias de otro agente lo pondría en rojo.
 - Develop y Testing de un mismo paso trabajan en la misma copia y rama. El encargo de cada uno lleva su ruta.
 - Integras cada rama con `git merge --no-ff paso-<N>` cuando su ronda pasa, en el orden del plan, y corres `npm run check:full` en `main` tras cada oleada. Después borras la copia con `git worktree remove`.
 - El paso 1 instala todas las dependencias y define todos los scripts. Ningún paso posterior toca `package.json` ni `package-lock.json` salvo el 16.
@@ -63,7 +63,7 @@ docs/SPEC.md           criterios, arquitectura, diseño y plan
 ## Comandos
 
 - `npm ci`: en cada copia de trabajo nueva.
-- `npm run check`: lo que corre el hook de commit. Develop lo pasa antes de cada commit.
+- `npm run check`: lo que corre el hook de commit (`.githooks/pre-commit`). Develop lo pasa antes de cada commit.
 - `npm run check:full`: Testing lo corre en cada ronda y tú en `main` tras cada oleada.
 - `npm run gate:e2e`: las pruebas de Playwright de D-13. Se lanza a mano.
 

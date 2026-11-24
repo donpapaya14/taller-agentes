@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const raiz = resolve(import.meta.dirname, '../..');
@@ -209,6 +211,37 @@ describe('gate de GitHub', () => {
 
     expect(lineas.filter((linea) => linea.startsWith('- package-ecosystem:'))).toHaveLength(2);
     expect(esperas).toHaveLength(2);
+  });
+});
+
+describe('hook de commit', () => {
+  const HOOK = resolve(raiz, '.githooks/pre-commit');
+
+  // El hook llama a `npm` por el PATH: con un `npm` falso se ve con qué argumentos lo llama y que
+  // sale con su código, sin lanzar la suite entera dentro de la suite.
+  function correrConNpmQueSaleCon(codigo: number) {
+    const carpeta = mkdtempSync(join(tmpdir(), 'hook-de-commit-'));
+    try {
+      const argumentos = join(carpeta, 'argumentos');
+      const npmFalso = `#!/bin/sh\necho "$@" > "${argumentos}"\nexit ${codigo}\n`;
+      writeFileSync(join(carpeta, 'npm'), npmFalso, { mode: 0o755 });
+
+      const { status } = spawnSync(HOOK, {
+        env: { ...process.env, PATH: `${carpeta}:${process.env.PATH}` },
+      });
+
+      return { salida: status, argumentos: readFileSync(argumentos, 'utf8').trim() };
+    } finally {
+      rmSync(carpeta, { recursive: true, force: true });
+    }
+  }
+
+  it('[P-1] el hook de commit va en el repo y es ejecutable', () => {
+    expect(statSync(HOOK).mode & 0o100).not.toBe(0);
+  });
+
+  it.each([0, 1])('[P-1] el hook corre npm run check y sale con su código (%i)', (codigo) => {
+    expect(correrConNpmQueSaleCon(codigo)).toEqual({ salida: codigo, argumentos: 'run check' });
   });
 });
 

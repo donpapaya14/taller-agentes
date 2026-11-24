@@ -90,6 +90,13 @@ describe('README: lo que cuenta con honestidad', () => {
     expect(arrancar).toContain('node --env-file=.env.local scripts/crear-usuarios-demo.mjs');
   });
 
+  // El hook de commit viene en el repo pero no se activa solo: quien clone tiene que saber cómo.
+  it('[P-6] dice cómo activar el hook de commit', () => {
+    const arrancar = seccionDe(readme, 'Arrancar en local')?.texto ?? '';
+
+    expect(arrancar).toContain('git config core.hooksPath .githooks');
+  });
+
   it('[P-6] dice cómo se lanzaron Develop y Testing', () => {
     const agentes = seccionDe(readme, 'Los tres agentes')?.texto ?? '';
 

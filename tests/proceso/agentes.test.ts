@@ -66,6 +66,18 @@ describe('agentes del repo', () => {
     expect(leer(AGENTES.develop)).toContain('DIRECTRICES.md');
   });
 
+  // El hook de commit viene versionado en el repo: los textos que lo nombran dicen cuál es.
+  it('[P-2] el orquestador y develop dicen dónde está el hook de commit', () => {
+    const lineasConHook = ['CLAUDE.md', AGENTES.develop].flatMap((archivo) =>
+      leer(archivo)
+        .split('\n')
+        .filter((linea) => /hook/i.test(linea)),
+    );
+
+    expect(lineasConHook).not.toHaveLength(0);
+    expect(lineasConHook.filter((linea) => !linea.includes('.githooks/pre-commit'))).toEqual([]);
+  });
+
   it('[P-2] los agentes no dependen de nada de fuera del repo', () => {
     const dependencias = LOS_CUATRO_ARCHIVOS.flatMap((archivo) =>
       DEPENDENCIAS_DE_FUERA.filter((patron) => patron.test(leer(archivo))).map(

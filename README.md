@@ -94,12 +94,13 @@ Lo que cada capa no puede importar lo impone `.dependency-cruiser.cjs` (test `[D
 ```
 nvm use                                                     # Node 24, el de .nvmrc
 npm ci
+git config core.hooksPath .githooks                         # opcional: activa el hook de commit
 cp .env.example .env.local                                  # SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, CRON_SECRET, DEMO_PASSWORD
 node --env-file=.env.local scripts/crear-usuarios-demo.mjs  # los tres usuarios y los datos de la demo
 npm run dev
 ```
 
-La base de datos sale de `supabase/migrations`: con Docker, `supabase start` y `supabase db reset` la levantan en local y `supabase status -o env` da sus claves. `npm run check` (lint, tipos y tests) es lo que corre el hook de commit; `npm run check:full` suma cobertura, arquitectura, puertas y `spec:check`; `npm run gate:mutacion` muta el núcleo.
+La base de datos sale de `supabase/migrations`: con Docker, `supabase start` y `supabase db reset` la levantan en local y `supabase status -o env` da sus claves. `npm run check` (lint, tipos y tests) es lo que corre el hook de commit (`.githooks/pre-commit`); `npm run check:full` suma cobertura, arquitectura, puertas y `spec:check`; `npm run gate:mutacion` muta el núcleo.
 
 ## Qué no hace
 

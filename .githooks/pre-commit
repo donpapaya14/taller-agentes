@@ -1,0 +1,4 @@
+#!/bin/sh
+# Hook de commit de FOSO: lint, tipos y tests antes de cada commit, lo mismo que Develop pasa a mano.
+# Va en el repo pero git no lo activa solo: `git config core.hooksPath .githooks` (README).
+exec npm run check
