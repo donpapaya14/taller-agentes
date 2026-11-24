@@ -36,7 +36,7 @@ Lo que Testing comprueba en cada ronda. Un fallo cita una de estas directrices y
 | D-11 | VERIFICADO | 21 | 2026-11-24 |
 | D-12 | VERIFICADO | 7 | 2026-11-24 |
 | D-13 | MANUAL | 50 | 2026-11-24 |
-| D-14 | VERIFICADO | 254 | 2026-11-24 |
+| D-14 | VERIFICADO | 255 | 2026-11-24 |
 | D-15 | VERIFICADO | 7 | 2026-11-24 |
 
 Resumen: 15 criterios: 14 VERIFICADO, 0 ROJO, 0 SIN TEST, 1 MANUAL, 0 OMITIDO.
