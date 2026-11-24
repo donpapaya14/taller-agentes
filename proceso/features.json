@@ -39,7 +39,7 @@
     "id": "f07-ordenes-recambios",
     "titulo": "Órdenes y recambios",
     "resumen": "Los casos de uso de órdenes y recambios y sus repositorios en Supabase, que validan cada fila con zod.",
-    "estado": "pendiente"
+    "estado": "hecha"
   },
   {
     "id": "f08-documentos-demo",
