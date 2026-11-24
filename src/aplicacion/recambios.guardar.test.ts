@@ -115,6 +115,25 @@ describe('guardarFormularioDeRecambio: lo que no llega a guardarse', () => {
   );
 });
 
+describe('guardarFormularioDeRecambio: un nombre que no cabe', () => {
+  it('[D-14] un nombre de más de 80 caracteres no llega al repositorio y dice el rango', async () => {
+    const puerto = puertoQue(guardado);
+
+    const resultado = await guardarFormularioDeRecambio(
+      { ...FORMULARIO, nombre: 'x'.repeat(98) },
+      ID_TALLER,
+      puerto,
+    );
+
+    expect(resultado).toEqual({
+      ok: false,
+      motivo: REVISA,
+      errores: { nombre: 'El nombre tiene entre 2 y 80 caracteres' },
+    });
+    expect(puerto.guardarRecambio).not.toHaveBeenCalled();
+  });
+});
+
 describe('guardarFormularioDeRecambio: lo que el repositorio rechaza', () => {
   it('[D-14] una referencia repetida se dice junto al campo de la referencia', async () => {
     const puerto = puertoQue(rechazo('referencia_repetida'));

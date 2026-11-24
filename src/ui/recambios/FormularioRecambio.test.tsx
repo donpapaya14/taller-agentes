@@ -68,6 +68,17 @@ describe('FormularioRecambio: qué pide', () => {
     expect(campo('Precio en euros').value).toBe(escrito);
   });
 
+  // Se mira el texto del botón y no su nombre accesible: dom-accessibility-api calcula el nombre sin
+  // el espacio que abre el texto oculto («Guardar cambiosde FIL-01»).
+  it('[D-12] el botón de la edición dice a qué recambio guarda y solo lo oyen los lectores de pantalla', () => {
+    render(<FormularioRecambio recambio={RECAMBIO} accion={accionQue(null)} />);
+
+    const boton = screen.getByRole('button', { name: /^Guardar cambios/ });
+
+    expect(boton.textContent).toBe('Guardar cambios de FIL-01');
+    expect(boton.querySelector('.sr-only')?.textContent).toBe(' de FIL-01');
+  });
+
   it('[C-3] los campos se teclean como números y con ayuda del teclado del móvil', () => {
     render(<FormularioRecambio accion={accionQue(null)} />);
 
@@ -166,6 +177,34 @@ describe('FormularioRecambio: cuando hay errores', () => {
 
     expect((await screen.findByRole('alert')).textContent).toBe(motivo);
     expect(container.querySelectorAll('[aria-invalid]')).toHaveLength(0);
+  });
+});
+
+describe('FormularioRecambio: el alta con un nombre fuera de rango', () => {
+  const NOMBRE_LARGO =
+    'Pastillas de freno delanteras Bosch 0 986 494 xxx para Seat León 1.6 TDI 2012-2019 juego de cuatro';
+  const RANGO = 'El nombre tiene entre 2 y 80 caracteres';
+
+  it('[D-14] el rango sale junto al nombre y el nombre escrito no se pierde', async () => {
+    const accion = accionQue({
+      ok: false,
+      motivo: 'Revisa los campos con error',
+      errores: { nombre: RANGO },
+      valores: { referencia: 'pas-07', nombre: NOMBRE_LARGO, precio: '45,90', stock: '4' },
+    });
+    render(<FormularioRecambio accion={accion} />);
+
+    guardar();
+
+    const nombre = await waitFor(() => {
+      const marcado = campo('Nombre');
+      expect(marcado.getAttribute('aria-invalid')).toBe('true');
+      return marcado;
+    });
+    const explicacion = document.getElementById(nombre.getAttribute('aria-describedby') ?? '');
+    expect(explicacion?.textContent).toBe(RANGO);
+    expect(nombre.value).toBe(NOMBRE_LARGO);
+    expect(campo('Referencia').getAttribute('aria-invalid')).toBeNull();
   });
 });
 

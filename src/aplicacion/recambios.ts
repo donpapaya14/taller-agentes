@@ -21,6 +21,7 @@ const TOPE_DE_POSTGRES = 2_147_483_647;
 const MENSAJES = {
   referencia: 'La referencia tiene entre 2 y 20 caracteres',
   nombre: 'Falta el nombre del recambio',
+  nombreFueraDeRango: 'El nombre tiene entre 2 y 80 caracteres',
   precio: 'Precio no válido. Ejemplo: 12,50',
   entero: 'Tiene que ser un número entero, cero o más',
   stockTope: 'El stock no puede pasar de 2.147.483.647',
@@ -40,13 +41,23 @@ const enteroHastaElTope = (mensajeDelTope: string) =>
     z.number().max(TOPE_DE_POSTGRES, mensajeDelTope),
   );
 
+// Solo un nombre vacío, o que no es un texto, falta. Uno de una letra o de más de 80 caracteres está
+// escrito y hay que ajustarlo, así que dice el rango, como la referencia. El mínimo de 1 va primero
+// porque de cada campo solo se enseña el primer error: al vacío le toca «falta», no el rango.
+const NOMBRE_DEL_RECAMBIO = z
+  .string({ error: MENSAJES.nombre })
+  .trim()
+  .min(1, MENSAJES.nombre)
+  .min(2, MENSAJES.nombreFueraDeRango)
+  .max(80, MENSAJES.nombreFueraDeRango);
+
 // El precio se escribe en euros y se guarda en céntimos (D-5); `eurosACentimos` da null si no lo
 // entiende y `z.int` convierte ese null en el mensaje.
 const ESQUEMA_RECAMBIO = z
   .object({
     id: z.guid({ error: MENSAJES.id }).optional(),
     referencia: textoEntre(2, 20, MENSAJES.referencia).transform((texto) => texto.toUpperCase()),
-    nombre: textoEntre(2, 80, MENSAJES.nombre),
+    nombre: NOMBRE_DEL_RECAMBIO,
     precio: z
       .string({ error: MENSAJES.precio })
       .trim()

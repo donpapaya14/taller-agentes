@@ -63,12 +63,15 @@ describe('ListaRecambios: orden y marca de bajo mínimo', () => {
     expect(filas().map(referenciaDe)).toEqual(['AMO-02', 'ZUM-09', 'BAT-01']);
   });
 
+  // Congelada, una lista que se ordena a sí misma lanza. El orden se compara con ids escritos a mano
+  // porque TRES lo comparten otros tests: ordenada en el sitio, ya no valdría como referencia.
   it('[C-6] no cambia el orden de la lista que recibe', () => {
     const recibida = [...TRES];
+    Object.freeze(recibida);
 
     render(<ListaRecambios recambios={recibida} puedeEditar={false} />);
 
-    expect(recibida).toEqual(TRES);
+    expect(recibida.map((recambio) => recambio.id)).toEqual(['a', 'b', 'c']);
   });
 
   it('[C-6] el stock es el dato grande de la fila y lleva su mínimo al lado', () => {

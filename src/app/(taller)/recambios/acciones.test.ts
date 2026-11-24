@@ -146,14 +146,38 @@ describe('guardar: lo que no pasa la validación', () => {
     expect(guardarRecambio).not.toHaveBeenCalled();
   });
 
-  it('[D-2] un archivo donde se espera un número se trata como un campo mal escrito', async () => {
+  it('[D-2] un archivo donde se espera un número es un campo mal escrito y no se devuelve', async () => {
     const archivo = new File(['x'], 'stock.txt');
 
     const estado = await guardarCon({ ...CAMPOS, stock: archivo });
 
-    expect(estado).toMatchObject({
+    expect(estado).toEqual({
       ok: false,
+      motivo: 'Revisa los campos con error',
       errores: { stock: 'Tiene que ser un número entero, cero o más' },
+      valores: {
+        referencia: CAMPOS.referencia,
+        nombre: CAMPOS.nombre,
+        precio: CAMPOS.precio,
+        stockMinimo: CAMPOS.stockMinimo,
+      },
+    });
+    expect(guardarRecambio).not.toHaveBeenCalled();
+  });
+});
+
+describe('guardar: un nombre que no cabe', () => {
+  it('[D-14] un nombre de catálogo de más de 80 caracteres dice el rango y se devuelve entero', async () => {
+    const nombre =
+      'Pastillas de freno delanteras Bosch 0 986 494 xxx para Seat León 1.6 TDI 2012-2019 juego de cuatro';
+
+    const estado = await guardarCon({ ...CAMPOS, nombre });
+
+    expect(estado).toEqual({
+      ok: false,
+      motivo: 'Revisa los campos con error',
+      errores: { nombre: 'El nombre tiene entre 2 y 80 caracteres' },
+      valores: { ...CAMPOS, nombre },
     });
     expect(guardarRecambio).not.toHaveBeenCalled();
   });
