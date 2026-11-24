@@ -38,6 +38,7 @@ describe('esFalloEsperado: lo que se relanza', () => {
     ['un fallo de red de Supabase, con el código vacío', falloDeSupabase('fetch failed', '')],
     ['un código que no es un texto', new Error('x', { cause: { code: 42 } })],
     ['una causa sin código', new Error('x', { cause: { message: 'sin código' } })],
+    ['una causa null', new Error('x', { cause: null })],
     ['un objeto con código que no es un Error', { message: 'x', code: '42501' }],
     ['un texto', 'boom'],
     ['un número', 42],

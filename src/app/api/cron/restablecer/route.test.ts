@@ -194,6 +194,19 @@ describe('GET /api/cron/restablecer: el entorno', () => {
   );
 });
 
+// Con la variable sin definir (no vacía: ausente) la lectura del secreto da `null`, y «null»
+// escrito en la cabecera no puede pasar por el secreto.
+describe('GET /api/cron/restablecer: sin CRON_SECRET en el entorno', () => {
+  it.each(['Bearer null', 'Bearer undefined'])(
+    '[C-13] la cabecera «%s» recibe 401 y no se restablece nada',
+    (autorizacion) => {
+      vi.stubEnv('CRON_SECRET', undefined);
+
+      return seRechaza(autorizacion);
+    },
+  );
+});
+
 // Lo que la ruta no sabe explicar se relanza: lo registra Next y la respuesta no cuenta el detalle.
 describe('GET /api/cron/restablecer: un fallo inesperado', () => {
   it('[D-14] un fallo que no es del entorno no se esconde ni se cuenta en la respuesta', async () => {
