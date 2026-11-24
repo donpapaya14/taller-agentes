@@ -21,7 +21,7 @@ const ronda = (numero: number, falla: boolean, fallos = 0): FeatureConRondas['ro
   feature: 'f0',
   ronda: numero,
   fecha: '2026-11-23',
-  commitRevisado: 'b264d4fa3652df75709525fb2b6999de9bd67a31',
+  commitRevisado: '61b7ca6a7d244d654f5fb7c8a8b76f3420e14cd1',
   veredicto: falla ? 'FALLA' : 'PASA',
   comandos: [{ comando: 'npm run check', resultado: falla ? 'FALLO' : 'OK', resumen: 'resumen' }],
   fallos: Array.from({ length: fallos }, (_, i) => ({
@@ -113,7 +113,7 @@ describe('/proceso: contenido', () => {
     const destinos = screen.getAllByRole('link').map((enlace) => enlace.getAttribute('href'));
 
     expect(destinos).toContain(`${URL_REPO}/blob/main/CLAUDE.md`);
-    expect(destinos).toContain(`${URL_REPO}/commit/b264d4fa3652df75709525fb2b6999de9bd67a31`);
+    expect(destinos).toContain(`${URL_REPO}/commit/61b7ca6a7d244d654f5fb7c8a8b76f3420e14cd1`);
     expect(screen.getByRole('link', { name: 'Entrar' }).getAttribute('href')).toBe('/login');
   });
 });
